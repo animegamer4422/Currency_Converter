@@ -1,0 +1,26 @@
+Analyzing CurrencyConverter...                                  
+
+   info - Parameter 'message' could be a super parameter - lib\core\error\exceptions.dart:11:3 - use_super_parameters
+   info - Parameter 'message' could be a super parameter - lib\core\error\exceptions.dart:15:3 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\skeleton_loader.dart:49:30 - deprecated_member_use
+warning - Unused import: 'package:currency_converter/features/history_chart/providers/history_provider.dart' - lib\features\currency_converter\pages\converter_page.dart:12:8 - unused_import
+warning - The value of the local variable 'themeProvider' isn't used - lib\features\currency_converter\pages\converter_page.dart:35:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\currency_converter\pages\converter_page.dart:128:87 - deprecated_member_use
+   info - 'Parser' is deprecated and shouldn't be used. Use [GrammarParser] or [ShuntingYardParser] - lib\features\currency_converter\pages\converter_page.dart:172:41 - deprecated_member_use
+   info - 'Parser' is deprecated and shouldn't be used. Use [GrammarParser] or [ShuntingYardParser] - lib\features\currency_converter\pages\converter_page.dart:172:52 - deprecated_member_use
+   info - 'evaluate' is deprecated and shouldn't be used. Use [RealEvaluator], [IntervalEvaluator], or [VectorEvaluator] - lib\features\currency_converter\pages\converter_page.dart:175:70 - deprecated_member_use
+   info - 'Parser' is deprecated and shouldn't be used. Use [GrammarParser] or [ShuntingYardParser] - lib\features\currency_converter\pages\dashboard_page.dart:125:31 - deprecated_member_use
+   info - 'Parser' is deprecated and shouldn't be used. Use [GrammarParser] or [ShuntingYardParser] - lib\features\currency_converter\pages\dashboard_page.dart:125:42 - deprecated_member_use
+   info - 'evaluate' is deprecated and shouldn't be used. Use [RealEvaluator], [IntervalEvaluator], or [VectorEvaluator] - lib\features\currency_converter\pages\dashboard_page.dart:128:60 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\currency_converter\pages\dashboard_page.dart:178:47 - unnecessary_underscores
+warning - The value of the local variable 'themeProvider' isn't used - lib\features\currency_converter\widgets\amount_input_field.dart:18:11 - unused_local_variable
+warning - The value of the local variable 'themeProvider' isn't used - lib\features\currency_converter\widgets\currency_selector_dropdown.dart:44:11 - unused_local_variable
+warning - The value of the local variable 'themeProvider' isn't used - lib\features\currency_converter\widgets\currency_selector_dropdown.dart:132:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\currency_converter\widgets\currency_selector_dropdown.dart:165:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\currency_converter\widgets\currency_selector_dropdown.dart:182:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\history_chart\pages\deep_history_page.dart:279:63 - deprecated_member_use
+warning - Unused import: 'package:currency_converter/core/providers/theme_provider.dart' - lib\features\history_chart\widgets\historical_chart_widget.dart:5:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\history_chart\widgets\historical_chart_widget.dart:187:74 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\pages\main_screen.dart:76:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\pages\main_screen.dart:76:85 - deprecated_member_use
+

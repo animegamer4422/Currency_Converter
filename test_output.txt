@@ -1,0 +1,8 @@
+00:00 +0: loading C:/Users/Hari/Projects/CurrencyConverter/test/widget_test.dart
+00:00 +0 -1: loading C:/Users/Hari/Projects/CurrencyConverter/test/widget_test.dart [E]
+  Failed to load "C:/Users/Hari/Projects/CurrencyConverter/test/widget_test.dart":
+  Compilation failed for testPath=C:/Users/Hari/Projects/CurrencyConverter/test/widget_test.dart: lib/features/history_chart/widgets/historical_chart_widget.dart:119:28: Error: Can't find ')' to match '('.
+              GestureDetector(
+                             ^
+  .
+00:00 +0 -1: Some tests failed.
