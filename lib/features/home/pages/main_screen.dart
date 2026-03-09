@@ -13,10 +13,7 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
 
-  final List<Widget> _pages = const [
-    ConverterPage(),
-    DashboardPage(),
-  ];
+  final List<Widget> _pages = const [ConverterPage(), DashboardPage()];
 
   @override
   void dispose() {
@@ -27,11 +24,11 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       body: PageView(
         controller: _pageController,
-        physics: const BouncingScrollPhysics(),
+        physics: const PageScrollPhysics(),
         onPageChanged: (index) {
           setState(() {
             _currentIndex = index;
@@ -73,10 +70,10 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildNavItem(int index, IconData icon, String label, bool isDark) {
     final isSelected = _currentIndex == index;
-    final color = isSelected 
+    final color = isSelected
         ? (isDark ? Colors.white : Colors.black)
         : Colors.grey;
-        
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -90,25 +87,27 @@ class _MainScreenState extends State<MainScreen> {
         },
         behavior: HitTestBehavior.opaque,
         child: Container(
-          color: Colors.transparent, // expand gesture area 
+          color: Colors.transparent, // expand gesture area
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedTheme(
-                data: Theme.of(context).copyWith(
-                  iconTheme: IconThemeData(color: color, size: 26)
-                ),
+                data: Theme.of(
+                  context,
+                ).copyWith(iconTheme: IconThemeData(color: color, size: 26)),
                 child: Icon(icon),
               ),
               const SizedBox(height: 4),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 300),
                 style: TextStyle(
-                  color: color, 
+                  color: color,
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                  fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
+                  fontFamily: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.fontFamily,
                 ),
                 child: Text(label),
               ),

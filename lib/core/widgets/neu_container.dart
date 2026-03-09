@@ -24,13 +24,20 @@ class NeuContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? const Color(0xFF212121) : const Color(0xFFF0F0F3);
-    final pressedBackgroundColor = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFE6E6E9);
-    
-    final darkShadowColor = isDark ? const Color(0xFF101010) : const Color(0xFFCDCDD0);
-    final lightShadowColor = isDark ? const Color(0xFF2E2E2E) : const Color(0xFFFFFFFF);
+    final backgroundColor = isDark
+        ? const Color(0xFF212121)
+        : const Color(0xFFF0F0F3);
+    final pressedBackgroundColor = isDark
+        ? const Color(0xFF1A1A1A)
+        : const Color(0xFFE6E6E9);
+
+    final darkShadowColor = isDark
+        ? const Color(0xFF101010)
+        : const Color(0xFFCDCDD0);
+    final lightShadowColor = isDark
+        ? const Color(0xFF2E2E2E)
+        : const Color(0xFFFFFFFF);
 
     return Container(
       padding: padding,
@@ -39,7 +46,9 @@ class NeuContainer extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: isPressed ? pressedBackgroundColor : backgroundColor,
-        borderRadius: shape == BoxShape.circle ? null : BorderRadius.circular(borderRadius),
+        borderRadius: shape == BoxShape.circle
+            ? null
+            : BorderRadius.circular(borderRadius),
         shape: shape,
         boxShadow: isPressed
             ? [
@@ -64,10 +73,7 @@ class NeuContainer extends StatelessWidget {
       ),
       // If pressed, slightly shift the content down
       child: isPressed
-          ? Transform.translate(
-              offset: const Offset(2, 2),
-              child: child,
-            )
+          ? Transform.translate(offset: const Offset(2, 2), child: child)
           : child,
     );
   }

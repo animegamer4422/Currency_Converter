@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:currency_converter/core/providers/theme_provider.dart';
 import 'package:currency_converter/core/widgets/neu_container.dart';
+import 'package:currency_converter/features/settings/widgets/premium_upgrade_widget.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -24,7 +25,7 @@ class SettingsPage extends StatelessWidget {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -45,7 +46,10 @@ class SettingsPage extends StatelessWidget {
                     ListTile(
                       title: Text(
                         'Theme Mode',
-                        style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: textColor,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       trailing: SegmentedButton<ThemeMode>(
                         segments: const [
@@ -71,6 +75,8 @@ class SettingsPage extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 32),
+              const PremiumUpgradeWidget(),
             ],
           ),
         ),

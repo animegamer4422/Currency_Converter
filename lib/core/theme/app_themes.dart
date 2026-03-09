@@ -45,7 +45,7 @@ class AppThemes {
     ),
     // specific overrides for dark mode inputs if needed
     inputDecorationTheme: const InputDecorationTheme(
-        hintStyle: TextStyle(color: Colors.white54)
-    )
+      hintStyle: TextStyle(color: Colors.white54),
+    ),
   );
 }

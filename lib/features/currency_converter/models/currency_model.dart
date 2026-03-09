@@ -8,7 +8,9 @@ class CurrencyModel {
     return CurrencyModel(
       code: json.keys.first,
       name:
-          json[json.keys.first], // Assuming the value is the name of the currency
+          json[json
+              .keys
+              .first], // Assuming the value is the name of the currency
     );
   }
 

@@ -13,10 +13,9 @@ class ExchangeRateModel {
     return ExchangeRateModel(
       baseCurrency: json['base'],
       date: json['date'],
-      rates:
-          (json['rates'] as Map<String, dynamic>).map(
-            (key, value) => MapEntry(key, (value as num).toDouble()),
-          ),
+      rates: (json['rates'] as Map<String, dynamic>).map(
+        (key, value) => MapEntry(key, (value as num).toDouble()),
+      ),
     );
   }
 }

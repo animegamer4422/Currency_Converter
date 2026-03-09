@@ -26,16 +26,24 @@ class _HistoricalChartWidgetState extends State<HistoricalChartWidget> {
   }
 
   void _fetchData() async {
-    final converterProvider = Provider.of<ConverterProvider>(context, listen: false);
-    final historyProvider = Provider.of<HistoryProvider>(context, listen: false);
-    
-    if (converterProvider.baseCurrency != null && converterProvider.targetCurrency != null) {
+    final converterProvider = Provider.of<ConverterProvider>(
+      context,
+      listen: false,
+    );
+    final historyProvider = Provider.of<HistoryProvider>(
+      context,
+      listen: false,
+    );
+
+    if (converterProvider.baseCurrency != null &&
+        converterProvider.targetCurrency != null) {
       final errorResult = await historyProvider.fetchHistoricalData(
-        converterProvider.baseCurrency, 
+        converterProvider.baseCurrency,
         converterProvider.targetCurrency,
-        days: historyProvider.selectedDays, // Persist whatever was picked in Deep Search
+        days: historyProvider
+            .selectedDays, // Persist whatever was picked in Deep Search
       );
-      
+
       if (errorResult == 'network_error_fallback' && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -53,12 +61,11 @@ class _HistoricalChartWidgetState extends State<HistoricalChartWidget> {
     // Listen to changes in ConverterProvider to refetch chart data if currencies change
     return Consumer2<ConverterProvider, HistoryProvider>(
       builder: (context, converterProvider, historyProvider, child) {
-        
-        // This is a bit of a hack to trigger a refetch when currencies change, 
+        // This is a bit of a hack to trigger a refetch when currencies change,
         // but it works for this simple use case without complex listeners.
-        // A better approach in a larger app would be to use a ProxyProvider or 
+        // A better approach in a larger app would be to use a ProxyProvider or
         // a dedicated orchestration layer.
-        
+
         if (historyProvider.isLoading && historyProvider.chartSpots.isEmpty) {
           return const Padding(
             padding: EdgeInsets.only(top: 8.0),
@@ -71,28 +78,37 @@ class _HistoricalChartWidgetState extends State<HistoricalChartWidget> {
         }
 
         if (historyProvider.errorMessage != null) {
-          final isUnsupported = historyProvider.errorMessage!.contains('not available');
+          final isUnsupported = historyProvider.errorMessage!.contains(
+            'not available',
+          );
           return SizedBox(
             height: 200,
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(isUnsupported ? Icons.info_outline : Icons.error_outline, color: Colors.grey),
+                  Icon(
+                    isUnsupported ? Icons.info_outline : Icons.error_outline,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Text(
-                      historyProvider.errorMessage!, 
+                      historyProvider.errorMessage!,
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: isUnsupported ? Colors.grey : Theme.of(context).colorScheme.error),
+                      style: TextStyle(
+                        color: isUnsupported
+                            ? Colors.grey
+                            : Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ),
                   if (!isUnsupported)
                     TextButton(
                       onPressed: _fetchData,
                       child: const Text('Retry'),
-                    )
+                    ),
                 ],
               ),
             ),
@@ -103,7 +119,10 @@ class _HistoricalChartWidgetState extends State<HistoricalChartWidget> {
           return const SizedBox(
             height: 200,
             child: Center(
-              child: Text('No historical data available for this pair.', style: TextStyle(color: Colors.grey)),
+              child: Text(
+                'No historical data available for this pair.',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
           );
         }
@@ -138,7 +157,9 @@ class _HistoricalChartWidgetState extends State<HistoricalChartWidget> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const DeepHistoryPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const DeepHistoryPage(),
+                  ),
                 );
               },
               child: NeuContainer(
@@ -150,91 +171,115 @@ class _HistoricalChartWidgetState extends State<HistoricalChartWidget> {
                   child: ChartRevealWidget(
                     child: LineChart(
                       LineChartData(
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: ((historyProvider.maxY - historyProvider.minY) / 4).clamp(0.0001, double.infinity),
-                        getDrawingHorizontalLine: (value) {
-                          return FlLine(
-                            color: isDark ? Colors.white12 : Colors.black12,
-                            strokeWidth: 1,
-                            dashArray: [5, 5],
-                          );
-                        },
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), // Hide x-axis labels to save space
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 46,
-                            getTitlesWidget: (value, meta) {
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: Text(
-                                  value.toStringAsFixed(3),
-                                  style: TextStyle(
-                                    color: isDark ? Colors.white54 : Colors.black54,
-                                    fontSize: 10,
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          horizontalInterval:
+                              ((historyProvider.maxY - historyProvider.minY) /
+                                      4)
+                                  .clamp(0.0001, double.infinity),
+                          getDrawingHorizontalLine: (value) {
+                            return FlLine(
+                              color: isDark ? Colors.white12 : Colors.black12,
+                              strokeWidth: 1,
+                              dashArray: [5, 5],
+                            );
+                          },
+                        ),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          bottomTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ), // Hide x-axis labels to save space
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 46,
+                              getTitlesWidget: (value, meta) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: Text(
+                                    value.toStringAsFixed(3),
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white54
+                                          : Colors.black54,
+                                      fontSize: 10,
+                                    ),
+                                    textAlign: TextAlign.right,
                                   ),
-                                  textAlign: TextAlign.right,
-                                ),
-                              );
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        minX: 0,
+                        maxX: (historyProvider.historicalData.length - 1)
+                            .toDouble(),
+                        minY: historyProvider.minY,
+                        maxY: historyProvider.maxY,
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: historyProvider.chartSpots,
+                            isCurved: false,
+                            color: Theme.of(context).colorScheme.primary,
+                            barWidth: 3,
+                            isStrokeCapRound: true,
+                            dotData: const FlDotData(show: false),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.15),
+                            ),
+                          ),
+                        ],
+                        lineTouchData: LineTouchData(
+                          touchTooltipData: LineTouchTooltipData(
+                            getTooltipColor: (touchedSpot) =>
+                                isDark ? Colors.grey.shade800 : Colors.white,
+                            getTooltipItems: (touchedSpots) {
+                              return touchedSpots.map((
+                                LineBarSpot touchedSpot,
+                              ) {
+                                final dateStr = historyProvider
+                                    .historicalData
+                                    .keys
+                                    .elementAt(touchedSpot.x.toInt());
+                                return LineTooltipItem(
+                                  '$dateStr\n',
+                                  TextStyle(
+                                    color: isDark
+                                        ? Colors.white70
+                                        : Colors.black87,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: touchedSpot.y.toStringAsFixed(4),
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList();
                             },
                           ),
                         ),
                       ),
-                      borderData: FlBorderData(show: false),
-                      minX: 0,
-                      maxX: (historyProvider.historicalData.length - 1).toDouble(),
-                      minY: historyProvider.minY,
-                      maxY: historyProvider.maxY,
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: historyProvider.chartSpots,
-                          isCurved: false,
-                          color: Theme.of(context).colorScheme.primary,
-                          barWidth: 3,
-                          isStrokeCapRound: true,
-                          dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                          ),
-                        ),
-                      ],
-                      lineTouchData: LineTouchData(
-                        touchTooltipData: LineTouchTooltipData(
-                          getTooltipColor: (touchedSpot) => isDark ? Colors.grey.shade800 : Colors.white,
-                          getTooltipItems: (touchedSpots) {
-                            return touchedSpots.map((LineBarSpot touchedSpot) {
-                              final dateStr = historyProvider.historicalData.keys.elementAt(touchedSpot.x.toInt());
-                              return LineTooltipItem(
-                                '$dateStr\n',
-                                TextStyle(
-                                  color: isDark ? Colors.white70 : Colors.black87,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: touchedSpot.y.toStringAsFixed(4),
-                                    style: TextStyle(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }).toList();
-                          },
-                        ),
-                      ),
-                    ),
                     ),
                   ),
                 ),

@@ -31,6 +31,8 @@ class _ConverterPageState extends State<ConverterPage> {
   @override
   void initState() {
     super.initState();
+    final provider = Provider.of<ConverterProvider>(context, listen: false);
+    _amountController.text = provider.inputText;
     _loadHistory();
   }
 
@@ -52,9 +54,9 @@ class _ConverterPageState extends State<ConverterPage> {
     if (value.trim().isEmpty) return;
     _saveDebounce = Timer(const Duration(seconds: 3), () async {
       await _favoritesService.saveAmountToHistory(
-        value, 
-        provider.baseCurrency?.code ?? '', 
-        provider.targetCurrency?.code ?? ''
+        value,
+        provider.baseCurrency?.code ?? '',
+        provider.targetCurrency?.code ?? '',
       );
       _loadHistory();
     });
@@ -80,8 +82,8 @@ class _ConverterPageState extends State<ConverterPage> {
             icon: const Icon(Icons.settings),
             onPressed: () {
               Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (context) => const SettingsPage())
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
               );
             },
           ),
@@ -92,7 +94,13 @@ class _ConverterPageState extends State<ConverterPage> {
         child: Consumer<ConverterProvider>(
           builder: (context, provider, child) {
             if (provider.currencies.isEmpty && provider.isLoading) {
-              return const Center(child: SkeletonLoader(width: 200, height: 200, borderRadius: 32));
+              return const Center(
+                child: SkeletonLoader(
+                  width: 200,
+                  height: 200,
+                  borderRadius: 32,
+                ),
+              );
             }
 
             if (provider.errorMessage != null && provider.currencies.isEmpty) {
@@ -102,7 +110,11 @@ class _ConverterPageState extends State<ConverterPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         provider.errorMessage!,
@@ -120,156 +132,243 @@ class _ConverterPageState extends State<ConverterPage> {
               );
             }
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.only(left: 16.0, top: 16.0, right: 16.0, bottom: 90.0),
+            return Padding(
+              padding: const EdgeInsets.only(
+                left: 16.0,
+                top: 16.0,
+                right: 16.0,
+                bottom: 16.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Merged Conversion Card
-                  NeuContainer(
-                    padding: const EdgeInsets.all(16),
-                    borderRadius: 32,
-                    child: Column(
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                  Expanded(
+                    child: NeuContainer(
+                      padding: const EdgeInsets.all(16),
+                      borderRadius: 32,
+                      child: SingleChildScrollView(
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: CurrencySelectorDropdown(
-                                label: 'From',
-                                selectedCurrency: provider.baseCurrency,
-                                currencies: provider.currencies,
-                                onChanged: (c) => provider.setBaseCurrency(c!),
-                                onFavoriteToggled: provider.toggleFavorite,
-                                isFavorite: provider.isFavorite,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: GestureDetector(
-                                onTap: provider.swapCurrencies,
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: isDark ? Colors.white : Colors.black,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.3),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Icon(
-                                    Icons.swap_horiz,
-                                    color: isDark ? Colors.black : Colors.white,
-                                    size: 24,
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: CurrencySelectorDropdown(
+                                    label: 'From',
+                                    selectedCurrency: provider.baseCurrency,
+                                    currencies: provider.currencies,
+                                    onChanged: (c) =>
+                                        provider.setBaseCurrency(c!),
+                                    onFavoriteToggled: provider.toggleFavorite,
+                                    isFavorite: provider.isFavorite,
                                   ),
                                 ),
-                              ),
-                            ),
-                            Expanded(
-                              child: CurrencySelectorDropdown(
-                                label: 'To',
-                                selectedCurrency: provider.targetCurrency,
-                                currencies: provider.currencies,
-                                onChanged: (c) => provider.setTargetCurrency(c!),
-                                onFavoriteToggled: provider.toggleFavorite,
-                                isFavorite: provider.isFavorite,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Amount', style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
-                                const SizedBox(height: 8),
-                                AmountInputField(
-                                  controller: _amountController,
-                                  onChanged: (value) {
-                                    _evaluateAmount(provider, value);
-                                    _scheduleSave(value, provider);
-                                  },
-                                  onHistoryTap: () => _showAmountHistory(provider),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
+                                  child: GestureDetector(
+                                    onTap: provider.swapCurrencies,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color:
+                                                (isDark
+                                                        ? Colors.white
+                                                        : Colors.black)
+                                                    .withOpacity(0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        Icons.swap_horiz,
+                                        color: isDark
+                                            ? Colors.black
+                                            : Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: CurrencySelectorDropdown(
+                                    label: 'To',
+                                    selectedCurrency: provider.targetCurrency,
+                                    currencies: provider.currencies,
+                                    onChanged: (c) =>
+                                        provider.setTargetCurrency(c!),
+                                    onFavoriteToggled: provider.toggleFavorite,
+                                    isFavorite: provider.isFavorite,
+                                  ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 16),
                             Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                const Text('Converted', style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
-                                const SizedBox(height: 8),
-                                provider.isLoading
-                                    ? const SizedBox(height: 48, child: Center(child: SkeletonLoader(width: 120, height: 32)))
-                                    : InkWell(
-                                        borderRadius: BorderRadius.circular(16),
-                                        onTap: () {
-                                          final text = NumberFormat('#,##0.00').format(provider.convertedAmount);
-                                          Clipboard.setData(ClipboardData(text: text));
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Copied "$text" to clipboard!'),
-                                              duration: const Duration(seconds: 2),
-                                              behavior: SnackBarBehavior.floating,
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Amount',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    AmountInputField(
+                                      controller: _amountController,
+                                      onChanged: (value) {
+                                        provider.setInputText(value);
+                                        _evaluateAmount(provider, value);
+                                        _scheduleSave(value, provider);
+                                      },
+                                      onHistoryTap: () =>
+                                          _showAmountHistory(provider),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    const Text(
+                                      'Converted',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    provider.isLoading
+                                        ? const SizedBox(
+                                            height: 48,
+                                            child: Center(
+                                              child: SkeletonLoader(
+                                                width: 120,
+                                                height: 32,
+                                              ),
                                             ),
-                                          );
-                                        },
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          alignment: Alignment.centerRight,
-                                          child: Text(
-                                            NumberFormat('#,##0.00').format(provider.convertedAmount),
-                                            style: TextStyle(
-                                              fontSize: 32,
-                                              fontWeight: FontWeight.bold,
-                                              color: isDark ? Colors.white : Colors.black,
+                                          )
+                                        : InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            onTap: () {
+                                              final text =
+                                                  NumberFormat(
+                                                    '#,##0.00',
+                                                  ).format(
+                                                    provider.convertedAmount,
+                                                  );
+                                              Clipboard.setData(
+                                                ClipboardData(text: text),
+                                              );
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Copied "$text" to clipboard!',
+                                                  ),
+                                                  duration: const Duration(
+                                                    seconds: 2,
+                                                  ),
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                ),
+                                              );
+                                            },
+                                            child: SizedBox(
+                                              width: double.infinity,
+                                              height:
+                                                  48, // Fixed height to prevent shifting
+                                              child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                child: Text(
+                                                  NumberFormat(
+                                                    '#,##0.00',
+                                                  ).format(
+                                                    provider.convertedAmount,
+                                                  ),
+                                                  style: TextStyle(
+                                                    fontSize: 32,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : Colors.black,
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ),
+                                    if (provider.convertedAmount > 0 &&
+                                        provider.targetCurrency != null &&
+                                        !provider.isLoading)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          top: 4.0,
+                                        ),
+                                        child: Text(
+                                          numberToWords(
+                                            provider.convertedAmount,
+                                          ),
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black54,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                          textAlign: TextAlign.right,
                                         ),
                                       ),
-                                if (provider.convertedAmount > 0 && provider.targetCurrency != null && !provider.isLoading)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4.0),
-                                    child: Text(
-                                      numberToWords(provider.convertedAmount),
-                                      style: TextStyle(
-                                        color: isDark ? Colors.white70 : Colors.black54,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                        fontStyle: FontStyle.italic,
+                                    if (provider.currentRates != null &&
+                                        provider.targetCurrency != null &&
+                                        !provider.isLoading)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          top: 4.0,
+                                        ),
+                                        child: Text(
+                                          '1 ${provider.baseCurrency?.code} = ${provider.currentRates!.rates[provider.targetCurrency!.code]?.toStringAsFixed(4) ?? "N/A"}',
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 10,
+                                          ),
+                                          textAlign: TextAlign.right,
+                                        ),
                                       ),
-                                      textAlign: TextAlign.right,
-                                    ),
-                                  ),
-                                if (provider.currentRates != null && provider.targetCurrency != null && !provider.isLoading)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4.0),
-                                    child: Text(
-                                      '1 ${provider.baseCurrency?.code} = ${provider.currentRates!.rates[provider.targetCurrency!.code]?.toStringAsFixed(4) ?? "N/A"}',
-                                      style: const TextStyle(color: Colors.grey, fontSize: 10),
-                                      textAlign: TextAlign.right,
-                                    ),
-                                  ),
+                                  ],
+                                ),
                               ],
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Rate Calculator Numpad
-                  _buildNumpad(provider, isDark),
-                  const SizedBox(height: 16),
+                  Expanded(child: _buildNumpad(provider, isDark)),
                 ],
               ),
             );
@@ -304,33 +403,36 @@ class _ConverterPageState extends State<ConverterPage> {
     String result = '';
     String currentNumber = '';
     for (int i = 0; i < sanitized.length; i++) {
-        var char = sanitized[i];
-        if (RegExp(r'[0-9.]').hasMatch(char)) {
-            currentNumber += char;
-        } else {
-            if (currentNumber.isNotEmpty) {
-                result += _formatSimpleNumber(currentNumber);
-                currentNumber = '';
-            }
-            result += char;
+      var char = sanitized[i];
+      if (RegExp(r'[0-9.]').hasMatch(char)) {
+        currentNumber += char;
+      } else {
+        if (currentNumber.isNotEmpty) {
+          result += _formatSimpleNumber(currentNumber);
+          currentNumber = '';
         }
+        result += char;
+      }
     }
     if (currentNumber.isNotEmpty) {
-        result += _formatSimpleNumber(currentNumber);
+      result += _formatSimpleNumber(currentNumber);
     }
     return result;
   }
-  
+
   String _formatSimpleNumber(String numStr) {
-      List<String> parts = numStr.split('.');
-      String intPart = parts[0];
-      if (intPart.isNotEmpty) {
-         intPart = intPart.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (Match m) => ',');
-      }
-      if (parts.length > 1) {
-          return '$intPart.${parts[1]}';
-      }
-      return intPart;
+    List<String> parts = numStr.split('.');
+    String intPart = parts[0];
+    if (intPart.isNotEmpty) {
+      intPart = intPart.replaceAllMapped(
+        RegExp(r'\B(?=(\d{3})+(?!\d))'),
+        (Match m) => ',',
+      );
+    }
+    if (parts.length > 1) {
+      return '$intPart.${parts[1]}';
+    }
+    return intPart;
   }
 
   void _onCalcBtn(String text, ConverterProvider provider) {
@@ -342,6 +444,7 @@ class _ConverterPageState extends State<ConverterPage> {
       if (current.isNotEmpty) {
         String newText = current.substring(0, current.length - 1);
         _amountController.text = _formatInputExpression(newText);
+        provider.setInputText(_amountController.text);
         _evaluateAmount(provider, _amountController.text);
       }
     } else if (text == '=') {
@@ -351,13 +454,16 @@ class _ConverterPageState extends State<ConverterPage> {
         ContextModel cm = ContextModel();
         double ev = exp.evaluate(EvaluationType.REAL, cm);
         if (ev == ev.truncateToDouble()) {
-          _amountController.text = _formatInputExpression(ev.toInt().toString());
+          _amountController.text = _formatInputExpression(
+            ev.toInt().toString(),
+          );
         } else {
           String str = ev.toStringAsFixed(4);
           str = str.replaceAll(RegExp(r'0*$'), '');
           str = str.replaceAll(RegExp(r'\.$'), '');
           _amountController.text = _formatInputExpression(str);
         }
+        provider.setInputText(_amountController.text);
         provider.setAmount(ev);
         // Schedule debounce save for the evaluated result too
         _scheduleSave(_amountController.text, provider);
@@ -366,12 +472,23 @@ class _ConverterPageState extends State<ConverterPage> {
       }
     } else {
       // Append text
-      if (current == '0' && text != '.') {
+      bool isOp = ['%', '+', '-', '*', '/'].contains(text);
+      if (current == '0' && text != '.' && !isOp) {
         current = text;
       } else {
-        current = current + text;
+        if (isOp && current.isNotEmpty) {
+          String lastChar = current[current.length - 1];
+          if (['%', '+', '-', '*', '/'].contains(lastChar)) {
+            current = current.substring(0, current.length - 1) + text;
+          } else {
+            current = current + text;
+          }
+        } else {
+          current = current + text;
+        }
       }
       _amountController.text = _formatInputExpression(current);
+      provider.setInputText(_amountController.text);
       _evaluateAmount(provider, _amountController.text);
       _scheduleSave(_amountController.text, provider);
     }
@@ -393,10 +510,15 @@ class _ConverterPageState extends State<ConverterPage> {
           },
           onSelect: (displayAmount, baseCode, targetCode) {
             _amountController.text = displayAmount;
+            provider.setInputText(displayAmount);
             _evaluateAmount(provider, displayAmount);
             if (baseCode.isNotEmpty && targetCode.isNotEmpty) {
-              final base = provider.currencies.where((c) => c.code == baseCode).firstOrNull;
-              final target = provider.currencies.where((c) => c.code == targetCode).firstOrNull;
+              final base = provider.currencies
+                  .where((c) => c.code == baseCode)
+                  .firstOrNull;
+              final target = provider.currencies
+                  .where((c) => c.code == targetCode)
+                  .firstOrNull;
               if (base != null) provider.setBaseCurrency(base);
               if (target != null) provider.setTargetCurrency(target);
             }
@@ -420,28 +542,41 @@ class _ConverterPageState extends State<ConverterPage> {
       children: [
         const Text(
           'Rate Calculator',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey,
+          ),
         ),
-        const SizedBox(height: 16),
-        NeuContainer(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-          borderRadius: 32,
-          child: Column(
-            children: keys.map((row) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: row.map((key) {
-                    return _NumpadButton(
-                      text: key,
-                      isDark: isDark,
-                      onTap: () => _onCalcBtn(key, provider),
-                    );
-                  }).toList(),
-                ),
-              );
-            }).toList(),
+        const SizedBox(height: 12),
+        Expanded(
+          child: NeuContainer(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+            borderRadius: 32,
+            child: Column(
+              children: keys.map((row) {
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: row.map((key) {
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: _NumpadButton(
+                              text: key,
+                              isDark: isDark,
+                              onTap: () => _onCalcBtn(key, provider),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
         ),
       ],
@@ -464,7 +599,8 @@ class _NumpadButton extends StatefulWidget {
   State<_NumpadButton> createState() => _NumpadButtonState();
 }
 
-class _NumpadButtonState extends State<_NumpadButton> with SingleTickerProviderStateMixin {
+class _NumpadButtonState extends State<_NumpadButton>
+    with SingleTickerProviderStateMixin {
   bool _isPressed = false;
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -476,9 +612,10 @@ class _NumpadButtonState extends State<_NumpadButton> with SingleTickerProviderS
       vsync: this,
       duration: const Duration(milliseconds: 100),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -505,9 +642,20 @@ class _NumpadButtonState extends State<_NumpadButton> with SingleTickerProviderS
 
   @override
   Widget build(BuildContext context) {
-    bool isOp = ['%','⌫','+','-','*','/','=','AC'].contains(widget.text);
-    bool isTextSized = ['%','⌫','+','-','*','/','=','AC','00','.'].contains(widget.text);
-    
+    bool isOp = ['%', '⌫', '+', '-', '*', '/', '=', 'AC'].contains(widget.text);
+    bool isTextSized = [
+      '%',
+      '⌫',
+      '+',
+      '-',
+      '*',
+      '/',
+      '=',
+      'AC',
+      '00',
+      '.',
+    ].contains(widget.text);
+
     return GestureDetector(
       onTapDown: _handleTapDown,
       onTapUp: _handleTapUp,
@@ -515,22 +663,27 @@ class _NumpadButtonState extends State<_NumpadButton> with SingleTickerProviderS
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: NeuContainer(
-          width: 58,
-          height: 58,
-          borderRadius: 29,
-          shape: BoxShape.circle, 
+          borderRadius: 24,
           isPressed: _isPressed,
-          child: Center(
-            child: widget.text == '⌫'
-                ? Icon(Icons.backspace_rounded, size: 24, color: widget.isDark ? Colors.white : Colors.black)
-                : Text(
-                    widget.text,
-                    style: TextStyle(
-                      fontSize: isTextSized && widget.text == '00' ? 20 : 26,
-                      fontWeight: isOp ? FontWeight.bold : FontWeight.w500,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: widget.text == '⌫'
+                  ? Icon(
+                      Icons.backspace_rounded,
+                      size: 28,
                       color: widget.isDark ? Colors.white : Colors.black,
+                    )
+                  : Text(
+                      widget.text,
+                      style: TextStyle(
+                        fontSize: isTextSized && widget.text == '00' ? 24 : 32,
+                        fontWeight: isOp ? FontWeight.bold : FontWeight.w500,
+                        color: widget.isDark ? Colors.white : Colors.black,
+                      ),
                     ),
-                  ),
+            ),
           ),
         ),
       ),

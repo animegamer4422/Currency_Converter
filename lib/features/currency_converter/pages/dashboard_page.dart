@@ -25,12 +25,16 @@ class _DashboardPageState extends State<DashboardPage> {
   final FavoritesService _favoritesService = FavoritesService();
   List<String> _amountHistory = [];
   Timer? _saveDebounce;
+  bool _isEditMode = false;
 
   @override
   void initState() {
     super.initState();
     // Start empty so no default value clutters the field
-    _amountController = TextEditingController();
+    final provider = Provider.of<ConverterProvider>(context, listen: false);
+    _amountController = TextEditingController(
+      text: provider.dashboardInputText,
+    );
     _loadHistory();
   }
 
@@ -52,10 +56,10 @@ class _DashboardPageState extends State<DashboardPage> {
     if (value.trim().isEmpty) return;
     _saveDebounce = Timer(const Duration(seconds: 3), () async {
       await _favoritesService.saveAmountToHistory(
-        value, 
-        provider.baseCurrency?.code ?? '', 
+        value,
+        provider.dashboardBaseCurrency?.code ?? '',
         provider.targetCurrency?.code ?? '',
-        isDashboard: true
+        isDashboard: true,
       );
       _loadHistory();
     });
@@ -77,19 +81,24 @@ class _DashboardPageState extends State<DashboardPage> {
           },
           onSelect: (displayAmount, baseCode, targetCode) {
             _amountController.text = displayAmount;
+            provider.setDashboardInputText(displayAmount);
             if (displayAmount.isNotEmpty) {
               try {
                 GrammarParser p = GrammarParser();
                 Expression exp = p.parse(displayAmount.replaceAll(',', ''));
                 ContextModel cm = ContextModel();
                 double ev = exp.evaluate(EvaluationType.REAL, cm);
-                provider.setAmount(ev);
+                provider.setDashboardAmount(ev);
               } catch (_) {}
             }
             if (baseCode.isNotEmpty && targetCode.isNotEmpty) {
-              final base = provider.currencies.where((c) => c.code == baseCode).firstOrNull;
-              final target = provider.currencies.where((c) => c.code == targetCode).firstOrNull;
-              if (base != null) provider.setBaseCurrency(base);
+              final base = provider.currencies
+                  .where((c) => c.code == baseCode)
+                  .firstOrNull;
+              final target = provider.currencies
+                  .where((c) => c.code == targetCode)
+                  .firstOrNull;
+              if (base != null) provider.setDashboardBaseCurrency(base);
               if (target != null) provider.setTargetCurrency(target);
             }
             Navigator.pop(ctx);
@@ -102,7 +111,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -118,8 +127,8 @@ class _DashboardPageState extends State<DashboardPage> {
             icon: const Icon(Icons.settings),
             onPressed: () {
               Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (context) => const SettingsPage())
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
               );
             },
           ),
@@ -129,13 +138,26 @@ class _DashboardPageState extends State<DashboardPage> {
       body: SafeArea(
         child: Consumer<ConverterProvider>(
           builder: (context, provider, child) {
-            if (provider.currencies.isEmpty || provider.currentRates == null) {
-              return const Center(child: SkeletonLoader(width: 200, height: 200, borderRadius: 32));
+            if (provider.currencies.isEmpty ||
+                provider.dashboardCurrentRates == null) {
+              return const Center(
+                child: SkeletonLoader(
+                  width: 200,
+                  height: 200,
+                  borderRadius: 32,
+                ),
+              );
             }
 
-            final favorites = provider.currencies
-                .where((c) => provider.isDashboardFavorite(c.code) && c.code != provider.baseCurrency?.code)
-                .toList();
+            final currencyByCode = {
+                for (final c in provider.currencies) c.code: c
+              };
+              final favorites = provider.favoriteDashboardCurrencyCodes
+                  .where((code) =>
+                      code != provider.dashboardBaseCurrency?.code &&
+                      currencyByCode.containsKey(code))
+                  .map((code) => currencyByCode[code]!)
+                  .toList();
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -159,9 +181,10 @@ class _DashboardPageState extends State<DashboardPage> {
                         const SizedBox(height: 16),
                         CurrencySelectorDropdown(
                           label: '', // Label hidden intentionally
-                          selectedCurrency: provider.baseCurrency,
+                          selectedCurrency: provider.dashboardBaseCurrency,
                           currencies: provider.currencies,
-                          onChanged: (currency) => provider.setBaseCurrency(currency!),
+                          onChanged: (currency) =>
+                              provider.setDashboardBaseCurrency(currency!),
                           onFavoriteToggled: provider.toggleDashboardFavorite,
                           isFavorite: provider.isDashboardFavorite,
                         ),
@@ -178,20 +201,24 @@ class _DashboardPageState extends State<DashboardPage> {
                         AmountInputField(
                           controller: _amountController,
                           onChanged: (value) {
+                            provider.setDashboardInputText(value);
                             if (value.isEmpty) {
-                              provider.setAmount(0.0);
+                              provider.setDashboardAmount(0.0);
                               return;
                             }
                             try {
                               GrammarParser p = GrammarParser();
                               Expression exp = p.parse(value);
                               ContextModel cm = ContextModel();
-                              double evaluatedAmount = exp.evaluate(EvaluationType.REAL, cm);
-                              provider.setAmount(evaluatedAmount);
+                              double evaluatedAmount = exp.evaluate(
+                                EvaluationType.REAL,
+                                cm,
+                              );
+                              provider.setDashboardAmount(evaluatedAmount);
                             } catch (e) {
                               final fallback = double.tryParse(value);
                               if (fallback != null) {
-                                provider.setAmount(fallback);
+                                provider.setDashboardAmount(fallback);
                               }
                             }
                             _scheduleSave(value, provider);
@@ -202,7 +229,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
                 ),
-                
+
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Row(
@@ -211,33 +238,77 @@ class _DashboardPageState extends State<DashboardPage> {
                       Text(
                         'Favorites Dashboard',
                         style: TextStyle(
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (provider.isLoading)
+                      if (provider.isLoading && !_isEditMode)
                         const SizedBox(
-                          width: 16, height: 16,
-                          child: SkeletonLoader(width: 16, height: 16, borderRadius: 8),
+                          width: 16,
+                          height: 16,
+                          child: SkeletonLoader(
+                            width: 16,
+                            height: 16,
+                            borderRadius: 8,
+                          ),
                         )
+                      else
+                        GestureDetector(
+                          onTap: () => setState(() => _isEditMode = !_isEditMode),
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: _isEditMode
+                                ? Icon(
+                                    Icons.check_circle_outline,
+                                    key: const ValueKey('done'),
+                                    color: Colors.green,
+                                    size: 22,
+                                  )
+                                : Icon(
+                                    Icons.edit_outlined,
+                                    key: const ValueKey('edit'),
+                                    color: isDark
+                                        ? Colors.grey.shade400
+                                        : Colors.grey.shade600,
+                                    size: 22,
+                                  ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                Expanded(
-                  child: favorites.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Star your favorite currencies \nin the Convert tab to see them here!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey.shade500),
+                if (favorites.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Text(
+                      'Star your favorite currencies \nin the Convert tab, or add them below!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade500),
+                    ),
+                  ),
+
+                Builder(
+                  builder: (context) {
+                    final baseCurrency = provider.dashboardBaseCurrency;
+                    final displayList = baseCurrency != null
+                        ? [baseCurrency, ...favorites]
+                        : favorites;
+
+                    return Expanded(
+                      child: ReorderableListView.builder(
+                        padding: const EdgeInsets.only(
+                          left: 24.0,
+                          right: 24.0,
+                          top: 8.0,
+                          bottom: 100.0,
                         ),
-                      )
-                    : ReorderableListView.builder(
-                        padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 8.0, bottom: 100.0), // Extra bottom padding for floating bar
-                        itemCount: favorites.length,
+                        itemCount: displayList.length + 1,
+                        buildDefaultDragHandles: false,
                         proxyDecorator: (child, index, animation) {
                           return Material(
                             color: Colors.transparent,
@@ -245,130 +316,276 @@ class _DashboardPageState extends State<DashboardPage> {
                           );
                         },
                         onReorder: (oldIndex, newIndex) {
-                          provider.reorderDashboardFavorites(oldIndex, newIndex);
+                          if (!_isEditMode) return;
+                          // Index 0 is always the base currency — never reorder it
+                          if (oldIndex == 0 || newIndex == 0) return;
+                          // The last item is the "add" button — guard against it
+                          if (oldIndex >= displayList.length ||
+                              newIndex > displayList.length)
+                            return;
+                          // Only subtract 1 from each index to account for the base
+                          // currency sitting at position 0 in displayList.
+                          // FavoritesService.reorderDashboardFavorites already handles
+                          // the (oldIndex < newIndex) → newIndex -= 1 shift itself,
+                          // so we must NOT apply it here too.
+                          provider.reorderDashboardFavorites(
+                            oldIndex - 1,
+                            newIndex - 1,
+                          );
                         },
                         itemBuilder: (context, index) {
-                          final target = favorites[index];
-                          final rate = provider.currentRates!.rates[target.code] ?? 0.0;
-                          final converted = provider.amount * rate;
-                          
-                          final double? pctChange = provider.percentageChanges[target.code];
-                          // A positive rate change means target weakened vs base (you get MORE for 1 base unit)
-                          // We invert: negative pctChange = target strengthened = good = green ↑
-                          final bool targetStrengthened = (pctChange ?? 0) < 0;
-                          final Color changeColor = targetStrengthened ? Colors.green : Colors.red;
-                          final double absPct = (pctChange ?? 0).abs();
-                          final int daysDiff = provider.percentageChangeDays;
-                          final String changeSign = targetStrengthened ? '+' : '-';
-                          final String changeText = pctChange != null
-                              ? '$changeSign${absPct.toStringAsFixed(2)}%  ${daysDiff}d'
-                              : '';
-                          
-                          return Padding(
-                            key: ValueKey(target.code),
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Dismissible(
-                              key: ValueKey('dismiss_${target.code}'),
-                              direction: DismissDirection.endToStart,
-                              background: NeuContainer(
-                                padding: const EdgeInsets.only(right: 20),
-                                borderRadius: 24,
-                                child: Container(
-                                  alignment: Alignment.centerRight,
-                                  child: const Icon(Icons.delete_outline, color: Colors.red, size: 32),
-                                ),
+                          if (index == displayList.length) {
+                            return Padding(
+                              key: const ValueKey('add_favorite_button'),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
                               ),
-                              onDismissed: (_) {
-                                provider.toggleDashboardFavorite(target.code);
-                              },
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(24),
-                                onLongPress: () {
-                                  final text = '${converted.toStringAsFixed(2)} ${target.code}';
-                                  Clipboard.setData(ClipboardData(text: text));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Copied "$text"'),
-                                      duration: const Duration(seconds: 1),
-                                    ),
-                                  );
-                                },
                                 onTap: () {
-                                  provider.setTargetCurrency(target);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const DeepHistoryPage()),
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (context) {
+                                      return CurrencySearchSheet(
+                                        currencies: provider.currencies,
+                                        selectedCurrency: null,
+                                        onChanged: (currency) {
+                                          if (currency != null &&
+                                              !provider.isDashboardFavorite(
+                                                currency.code,
+                                              )) {
+                                            provider.toggleDashboardFavorite(
+                                              currency.code,
+                                            );
+                                          }
+                                        },
+                                        onFavoriteToggled:
+                                            provider.toggleDashboardFavorite,
+                                        isFavorite:
+                                            provider.isDashboardFavorite,
+                                      );
+                                    },
                                   );
                                 },
                                 child: NeuContainer(
                                   padding: const EdgeInsets.all(20),
                                   borderRadius: 24,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.add_circle_outline,
+                                      size: 32,
+                                      color: isDark
+                                          ? Colors.white54
+                                          : Colors.black54,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          final target = displayList[index];
+                          final isBase =
+                              target.code ==
+                              provider.dashboardBaseCurrency?.code;
+                          final rate = isBase
+                              ? 1.0
+                              : (provider.dashboardCurrentRates!.rates[target
+                                        .code] ??
+                                    0.0);
+                          final converted = provider.dashboardAmount * rate;
+
+                          final double? pctChange = isBase
+                              ? null
+                              : provider.dashboardPercentageChanges[target
+                                    .code];
+                          // A positive rate change means target weakened vs base (you get MORE for 1 base unit)
+                          // We invert: negative pctChange = target strengthened = good = green ↑
+                          final bool targetStrengthened = (pctChange ?? 0) < 0;
+                          final Color changeColor = targetStrengthened
+                              ? Colors.green
+                              : Colors.red;
+                          final double absPct = (pctChange ?? 0).abs();
+                          final int daysDiff =
+                              provider.dashboardPercentageChangeDays;
+                          final String changeSign = targetStrengthened
+                              ? '+'
+                              : '-';
+                          final String changeText = pctChange != null
+                              ? '$changeSign${absPct.toStringAsFixed(2)}%  ${daysDiff}d'
+                              : '';
+
+                          return Padding(
+                            key: ValueKey(target.code),
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(24),
+                              onLongPress: _isEditMode
+                                  ? null
+                                  : () {
+                                      final text =
+                                          '${converted.toStringAsFixed(2)} ${target.code}';
+                                      Clipboard.setData(
+                                        ClipboardData(text: text),
+                                      );
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text('Copied "$text"'),
+                                          duration:
+                                              const Duration(seconds: 1),
+                                        ),
+                                      );
+                                    },
+                              onTap: (_isEditMode || isBase)
+                                  ? null
+                                  : () {
+                                      provider.setTargetCurrency(target);
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              DeepHistoryPage(
+                                            baseCurrencyCode: provider
+                                                .dashboardBaseCurrency?.code,
+                                            targetCurrencyCode: target.code,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                              child: NeuContainer(
+                                padding: const EdgeInsets.all(20),
+                                borderRadius: 24,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    // Delete button (edit mode, non-base only)
+                                    if (_isEditMode && !isBase)
+                                      GestureDetector(
+                                        onTap: () => provider
+                                            .toggleDashboardFavorite(target.code),
+                                        child: const Padding(
+                                          padding: EdgeInsets.only(right: 12.0),
+                                          child: Icon(
+                                            Icons.remove_circle,
+                                            color: Colors.red,
+                                            size: 22,
+                                          ),
+                                        ),
+                                      ),
+                                    // Currency name
+                                    Expanded(
+                                      child: Row(
                                         children: [
                                           Text(
                                             target.code,
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 18,
-                                              color: isDark ? Colors.white : Colors.black,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.black,
                                             ),
                                           ),
                                           const SizedBox(width: 8),
-                                          Text(
-                                            target.name.length > 12 ? '${target.name.substring(0, 10)}...' : target.name,
-                                            style: const TextStyle(color: Colors.grey),
-                                            overflow: TextOverflow.ellipsis,
+                                          Flexible(
+                                            child: Text(
+                                              target.name.length > 12
+                                                  ? '${target.name.substring(0, 10)}...'
+                                                  : target.name,
+                                              style: const TextStyle(
+                                                color: Colors.grey,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ),
                                         ],
                                       ),
+                                    ),
+                                    // Converted amount / drag handle
+                                    if (_isEditMode && !isBase)
+                                      ReorderableDragStartListener(
+                                        index: index,
+                                        child: Icon(
+                                          Icons.drag_handle,
+                                          color: isDark
+                                              ? Colors.white38
+                                              : Colors.black38,
+                                        ),
+                                      )
+                                    else
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
                                         children: [
                                           Text(
                                             converted.toStringAsFixed(2),
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 18,
-                                              color: isDark ? Colors.white : Colors.black,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.black,
                                             ),
                                           ),
-                                           if (pctChange != null)
-                                             Padding(
-                                               padding: const EdgeInsets.only(top: 4.0),
-                                               child: Row(
-                                                 mainAxisSize: MainAxisSize.min,
-                                                 children: [
-                                                   Icon(
-                                                     targetStrengthened
-                                                         ? Icons.arrow_upward_rounded
-                                                         : Icons.arrow_downward_rounded,
-                                                     size: 12, color: changeColor,
-                                                   ),
-                                                   const SizedBox(width: 2),
-                                                   Text(
-                                                     changeText,
-                                                     style: TextStyle(
-                                                       color: changeColor,
-                                                       fontSize: 13,
-                                                       fontWeight: FontWeight.w600,
-                                                     ),
-                                                   ),
-                                                 ],
-                                               ),
-                                             ),
+                                          if (isBase)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 4.0,
+                                              ),
+                                              child: Text(
+                                                'Base Currency',
+                                                style: TextStyle(
+                                                  color: Colors.blue.shade400,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            )
+                                          else if (pctChange != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 4.0,
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    targetStrengthened
+                                                        ? Icons
+                                                              .arrow_upward_rounded
+                                                        : Icons
+                                                              .arrow_downward_rounded,
+                                                    size: 12,
+                                                    color: changeColor,
+                                                  ),
+                                                  const SizedBox(width: 2),
+                                                  Text(
+                                                    changeText,
+                                                    style: TextStyle(
+                                                      color: changeColor,
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
                                         ],
                                       ),
-                                    ],
-                                  ),
+                                  ],
                                 ),
                               ),
                             ),
                           );
                         },
                       ),
+                    );
+                  },
                 ),
               ],
             );

@@ -37,7 +37,7 @@ String _convertWholeNumber(int number) {
     'sixteen',
     'seventeen',
     'eighteen',
-    'nineteen'
+    'nineteen',
   ];
 
   const List<String> tens = [
@@ -50,7 +50,7 @@ String _convertWholeNumber(int number) {
     'sixty',
     'seventy',
     'eighty',
-    'ninety'
+    'ninety',
   ];
 
   const List<String> scales = [
@@ -69,7 +69,8 @@ String _convertWholeNumber(int number) {
   }
 
   if (number < 100) {
-    return tens[number ~/ 10] + (number % 10 != 0 ? ' ${units[number % 10]}' : '');
+    return tens[number ~/ 10] +
+        (number % 10 != 0 ? ' ${units[number % 10]}' : '');
   }
 
   if (number < 1000) {

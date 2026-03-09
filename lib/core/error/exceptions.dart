@@ -16,5 +16,7 @@ class CacheException extends ErrorException {
 }
 
 class UnsupportedCurrencyException extends ErrorException {
-  UnsupportedCurrencyException([super.message = 'Historical data is not available for this currency.']);
+  UnsupportedCurrencyException([
+    super.message = 'Historical data is not available for this currency.',
+  ]);
 }
