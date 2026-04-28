@@ -13,7 +13,9 @@ class ApiClient {
       if (response.statusCode == 200) {
         return response;
       } else if (response.statusCode == 404) {
-        throw UnsupportedCurrencyException('Historical data is not available for this currency pair.');
+        throw UnsupportedCurrencyException(
+          'Historical data is not available for this currency pair.',
+        );
       } else {
         throw ServerException(
           'Failed to load data. Status Code: ${response.statusCode}',

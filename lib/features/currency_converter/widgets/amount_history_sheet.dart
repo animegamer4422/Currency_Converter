@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:currency_converter/core/widgets/neu_container.dart';
+import 'package:currency_converter/core/widgets/pressable_widget.dart';
 import 'package:currency_converter/features/currency_converter/providers/converter_provider.dart';
 import 'package:math_expressions/math_expressions.dart' hide Stack;
 
@@ -34,11 +35,11 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
     // Filter history based on search query
     final filteredHistory = widget.history.where((entry) {
       if (_searchQuery.trim().isEmpty) return true;
-      
+
       String displayAmount = entry;
       String baseCode = '';
       String targetCode = '';
-      
+
       try {
         final map = jsonDecode(entry) as Map<String, dynamic>;
         displayAmount = map['amount']?.toString() ?? '';
@@ -48,16 +49,16 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
 
       final query = _searchQuery.toLowerCase().replaceAll(',', '').trim();
       final qAmount = displayAmount.toLowerCase().replaceAll(',', '').trim();
-      
+
       bool isMatch = false;
 
       // check if query matches base or target
       if (baseCode.toLowerCase().contains(query)) isMatch = true;
       if (targetCode.toLowerCase().contains(query)) isMatch = true;
-      
+
       // check if exact query string matches the math expression
       if (qAmount.contains(query)) isMatch = true;
-      
+
       // evaluate math amount to get actual double value
       double actualAmount = 0.0;
       try {
@@ -72,14 +73,14 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
       if (queryNum != null && actualAmount != 0.0) {
         // fuzzy checking on the evaluated double result!
         double diff = (queryNum - actualAmount).abs();
-        
+
         // Match if within 15% distance
         if (diff <= (actualAmount.abs() * 0.15)) {
-            isMatch = true;
+          isMatch = true;
         }
         // Match if within absolute 5.0 flat (for small numbers like 10 matching 12)
         if (diff <= 5.0) {
-            isMatch = true;
+          isMatch = true;
         }
       }
 
@@ -101,27 +102,41 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.5),
+                color: Colors.grey.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          
+
           // Header Row
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
-               children: [
-                  Icon(Icons.history_rounded, size: 24, color: textColor.withOpacity(0.7)),
-                  const SizedBox(width: 8),
-                  Text('Amount History', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textColor)),
-                  const Spacer(),
-                  if (widget.history.isNotEmpty)
-                    TextButton(
-                      onPressed: widget.onClear,
-                      child: const Text('Clear', style: TextStyle(color: Colors.red)),
+              children: [
+                Icon(
+                  Icons.history_rounded,
+                  size: 24,
+                  color: textColor.withValues(alpha: 0.7),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Amount History',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: textColor,
+                  ),
+                ),
+                const Spacer(),
+                if (widget.history.isNotEmpty)
+                  TextButton(
+                    onPressed: widget.onClear,
+                    child: const Text(
+                      'Clear',
+                      style: TextStyle(color: Colors.red),
                     ),
-               ],
+                  ),
+              ],
             ),
           ),
 
@@ -137,7 +152,7 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
                   hintText: 'Search history (e.g., 50, USD)...',
                   hintStyle: TextStyle(color: Colors.grey.shade500),
                   border: InputBorder.none,
-                  icon: Icon(Icons.search, color: textColor.withOpacity(0.5)),
+                  icon: Icon(Icons.search, color: textColor.withValues(alpha: 0.5)),
                 ),
                 style: TextStyle(color: textColor),
                 onChanged: (value) {
@@ -156,9 +171,9 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
                     child: Padding(
                       padding: const EdgeInsets.all(32.0),
                       child: Text(
-                        widget.history.isEmpty 
-                           ? 'No history yet.\nEnter an amount and press = to save.'
-                           : 'No history found for "$_searchQuery".',
+                        widget.history.isEmpty
+                            ? 'No history yet.\nEnter an amount and press = to save.'
+                            : 'No history found for "$_searchQuery".',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.grey.shade500),
                       ),
@@ -172,7 +187,7 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
                       String displayAmount = entry;
                       String baseCode = '';
                       String targetCode = '';
-                      
+
                       try {
                         final map = jsonDecode(entry) as Map<String, dynamic>;
                         displayAmount = map['amount']?.toString() ?? '';
@@ -182,22 +197,29 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(20),
+                        child: PressableWidget(
                           onTap: () {
-                            widget.onSelect(displayAmount, baseCode, targetCode);
+                            widget.onSelect(
+                              displayAmount,
+                              baseCode,
+                              targetCode,
+                            );
                           },
                           child: NeuContainer(
                             padding: const EdgeInsets.all(16),
                             borderRadius: 20,
                             child: Row(
                               children: [
-                                Icon(Icons.history_rounded, size: 24,
-                                    color: textColor.withOpacity(0.5)),
+                                Icon(
+                                  Icons.history_rounded,
+                                  size: 24,
+                                  color: textColor.withValues(alpha: 0.5),
+                                ),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         displayAmount,
@@ -207,19 +229,28 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
                                           color: textColor,
                                         ),
                                       ),
-                                      if (baseCode.isNotEmpty && targetCode.isNotEmpty)
+                                      if (baseCode.isNotEmpty &&
+                                          targetCode.isNotEmpty)
                                         Padding(
-                                          padding: const EdgeInsets.only(top: 4.0),
+                                          padding: const EdgeInsets.only(
+                                            top: 4.0,
+                                          ),
                                           child: Text(
                                             '$baseCode ➔ $targetCode',
-                                            style: const TextStyle(color: Colors.grey, fontSize: 14),
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 14,
+                                            ),
                                           ),
                                         ),
                                     ],
                                   ),
                                 ),
-                                Icon(Icons.arrow_forward_ios_rounded, size: 16,
-                                    color: textColor.withOpacity(0.3)),
+                                Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 16,
+                                  color: textColor.withValues(alpha: 0.3),
+                                ),
                               ],
                             ),
                           ),

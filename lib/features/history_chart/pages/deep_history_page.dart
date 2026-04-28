@@ -8,7 +8,14 @@ import 'package:currency_converter/features/history_chart/providers/history_prov
 import 'package:currency_converter/features/currency_converter/providers/converter_provider.dart';
 
 class DeepHistoryPage extends StatefulWidget {
-  const DeepHistoryPage({super.key});
+  final String? baseCurrencyCode;
+  final String? targetCurrencyCode;
+
+  const DeepHistoryPage({
+    super.key,
+    this.baseCurrencyCode,
+    this.targetCurrencyCode,
+  });
 
   @override
   State<DeepHistoryPage> createState() => _DeepHistoryPageState();
@@ -26,15 +33,31 @@ class _DeepHistoryPageState extends State<DeepHistoryPage> {
   }
 
   void _loadData() {
-    final converterProvider = Provider.of<ConverterProvider>(context, listen: false);
-    final historyProvider = Provider.of<HistoryProvider>(context, listen: false);
-    
-    if (converterProvider.baseCurrency != null && converterProvider.targetCurrency != null) {
-      historyProvider.fetchHistoricalData(
-        converterProvider.baseCurrency, 
-        converterProvider.targetCurrency,
-        days: _selectedDays,
+    final converterProvider = Provider.of<ConverterProvider>(
+      context,
+      listen: false,
+    );
+    final historyProvider = Provider.of<HistoryProvider>(
+      context,
+      listen: false,
+    );
+
+    final baseCurrencyCode =
+        widget.baseCurrencyCode ?? converterProvider.baseCurrency?.code;
+    final targetCurrencyCode =
+        widget.targetCurrencyCode ?? converterProvider.targetCurrency?.code;
+
+    if (baseCurrencyCode != null && targetCurrencyCode != null) {
+      // Build minimal CurrencyModel-like objects: history provider just needs the code string
+      final base = converterProvider.currencies.firstWhere(
+        (c) => c.code == baseCurrencyCode,
+        orElse: () => converterProvider.baseCurrency!,
       );
+      final target = converterProvider.currencies.firstWhere(
+        (c) => c.code == targetCurrencyCode,
+        orElse: () => converterProvider.targetCurrency!,
+      );
+      historyProvider.fetchHistoricalData(base, target, days: _selectedDays);
     }
   }
 
@@ -55,6 +78,10 @@ class _DeepHistoryPageState extends State<DeepHistoryPage> {
       ),
       body: Consumer2<ConverterProvider, HistoryProvider>(
         builder: (context, converterProvider, historyProvider, child) {
+          final baseCurrencyCode =
+              widget.baseCurrencyCode ?? converterProvider.baseCurrency?.code;
+          final targetCurrencyCode = widget.targetCurrencyCode ??
+              converterProvider.targetCurrency?.code;
           return SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -62,7 +89,7 @@ class _DeepHistoryPageState extends State<DeepHistoryPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    '${converterProvider.baseCurrency?.code} to ${converterProvider.targetCurrency?.code}',
+                    '${baseCurrencyCode ?? '?'} to ${targetCurrencyCode ?? '?'}',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -74,19 +101,23 @@ class _DeepHistoryPageState extends State<DeepHistoryPage> {
                   Text(
                     'Historical Exchange Rates',
                     style: TextStyle(
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Time Selector
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final containerWidth = constraints.maxWidth;
                       final optionWidth = containerWidth / 4;
-                      
-                      final int selectedIndex = _getSelectedIndex(_selectedDays);
+
+                      final int selectedIndex = _getSelectedIndex(
+                        _selectedDays,
+                      );
 
                       return NeuContainer(
                         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -115,21 +146,24 @@ class _DeepHistoryPageState extends State<DeepHistoryPage> {
                                 _buildTimeOption(7, '1W', optionWidth, isDark),
                                 _buildTimeOption(30, '1M', optionWidth, isDark),
                                 _buildTimeOption(90, '3M', optionWidth, isDark),
-                                _buildTimeOption(365, '1Y', optionWidth, isDark),
+                                _buildTimeOption(
+                                  365,
+                                  '1Y',
+                                  optionWidth,
+                                  isDark,
+                                ),
                               ],
                             ),
                           ],
                         ),
                       );
-                    }
+                    },
                   ),
-                  
+
                   const SizedBox(height: 48),
 
                   // Chart Area
-                  Expanded(
-                    child: _buildChartArea(historyProvider, isDark),
-                  ),
+                  Expanded(child: _buildChartArea(historyProvider, isDark)),
                 ],
               ),
             ),
@@ -190,26 +224,31 @@ class _DeepHistoryPageState extends State<DeepHistoryPage> {
     }
 
     if (historyProvider.errorMessage != null) {
-      final isUnsupported = historyProvider.errorMessage!.contains('not available');
+      final isUnsupported = historyProvider.errorMessage!.contains(
+        'not available',
+      );
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(isUnsupported ? Icons.info_outline : Icons.error_outline, size: 48, color: Colors.grey),
+            Icon(
+              isUnsupported ? Icons.info_outline : Icons.error_outline,
+              size: 48,
+              color: Colors.grey,
+            ),
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32.0),
               child: Text(
-                historyProvider.errorMessage!, 
+                historyProvider.errorMessage!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+                style: TextStyle(
+                  color: isDark ? Colors.white54 : Colors.black54,
+                ),
               ),
             ),
             if (!isUnsupported)
-              TextButton(
-                onPressed: _loadData,
-                child: const Text('Retry'),
-              )
+              TextButton(onPressed: _loadData, child: const Text('Retry')),
           ],
         ),
       );
@@ -218,7 +257,7 @@ class _DeepHistoryPageState extends State<DeepHistoryPage> {
     if (historyProvider.chartSpots.isEmpty) {
       return Center(
         child: Text(
-          'No data available for this range.', 
+          'No data available for this range.',
           style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
         ),
       );
@@ -241,92 +280,107 @@ class _DeepHistoryPageState extends State<DeepHistoryPage> {
       child: ChartRevealWidget(
         child: LineChart(
           LineChartData(
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            horizontalInterval: ((historyProvider.maxY - historyProvider.minY) / 5).clamp(0.0001, double.infinity),
-            getDrawingHorizontalLine: (value) {
-              return FlLine(
-                color: isDark ? Colors.white12 : Colors.black12,
-                strokeWidth: 1,
-                dashArray: [5, 5],
-              );
-            },
-          ),
-          titlesData: FlTitlesData(
-            show: true,
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 50,
-                getTitlesWidget: (value, meta) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: Text(
-                      value.toStringAsFixed(3),
-                      style: TextStyle(
-                        color: isDark ? Colors.white54 : Colors.black54,
-                        fontSize: 10,
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              horizontalInterval:
+                  ((historyProvider.maxY - historyProvider.minY) / 5).clamp(
+                    0.0001,
+                    double.infinity,
+                  ),
+              getDrawingHorizontalLine: (value) {
+                return FlLine(
+                  color: isDark ? Colors.white12 : Colors.black12,
+                  strokeWidth: 1,
+                  dashArray: [5, 5],
+                );
+              },
+            ),
+            titlesData: FlTitlesData(
+              show: true,
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              bottomTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 50,
+                  getTitlesWidget: (value, meta) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: Text(
+                        value.toStringAsFixed(3),
+                        style: TextStyle(
+                          color: isDark ? Colors.white54 : Colors.black54,
+                          fontSize: 10,
+                        ),
+                        textAlign: TextAlign.right,
                       ),
-                      textAlign: TextAlign.right,
-                    ),
-                  );
+                    );
+                  },
+                ),
+              ),
+            ),
+            borderData: FlBorderData(show: false),
+            minX: 0,
+            maxX: (historyProvider.historicalData.length - 1).toDouble(),
+            minY: historyProvider.minY,
+            maxY: historyProvider.maxY,
+            lineBarsData: [
+              LineChartBarData(
+                spots: historyProvider.chartSpots,
+                isCurved: false,
+                color: isDark ? Colors.white : Colors.black,
+                barWidth: 3,
+                isStrokeCapRound: true,
+                dotData: const FlDotData(show: false),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: (isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.1,
+                  ),
+                ),
+              ),
+            ],
+            lineTouchData: LineTouchData(
+              touchTooltipData: LineTouchTooltipData(
+                fitInsideHorizontally: true,
+                getTooltipColor: (_) =>
+                    isDark ? Colors.grey.shade900 : Colors.white,
+                getTooltipItems: (touchedSpots) {
+                  return touchedSpots.map((LineBarSpot touchedSpot) {
+                    final dateStr = historyProvider.historicalData.keys
+                        .elementAt(touchedSpot.x.toInt());
+                    return LineTooltipItem(
+                      '$dateStr\n',
+                      TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black87,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: touchedSpot.y.toStringAsFixed(4),
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList();
                 },
               ),
             ),
           ),
-          borderData: FlBorderData(show: false),
-          minX: 0,
-          maxX: (historyProvider.historicalData.length - 1).toDouble(),
-          minY: historyProvider.minY,
-          maxY: historyProvider.maxY,
-          lineBarsData: [
-            LineChartBarData(
-              spots: historyProvider.chartSpots,
-              isCurved: false,
-              color: isDark ? Colors.white : Colors.black,
-              barWidth: 3,
-              isStrokeCapRound: true,
-              dotData: const FlDotData(show: false),
-              belowBarData: BarAreaData(
-                show: true,
-                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
-              ),
-            ),
-          ],
-          lineTouchData: LineTouchData(
-            touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (_) => isDark ? Colors.grey.shade900 : Colors.white,
-              getTooltipItems: (touchedSpots) {
-                return touchedSpots.map((LineBarSpot touchedSpot) {
-                  final dateStr = historyProvider.historicalData.keys.elementAt(touchedSpot.x.toInt());
-                  return LineTooltipItem(
-                    '$dateStr\n',
-                    TextStyle(
-                      color: isDark ? Colors.white70 : Colors.black87,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: touchedSpot.y.toStringAsFixed(4),
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList();
-              },
-            ),
-          ),
         ),
-      ),
       ),
     );
   }

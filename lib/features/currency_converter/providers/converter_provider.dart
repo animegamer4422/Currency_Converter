@@ -3,6 +3,7 @@ import 'package:currency_converter/features/currency_converter/models/currency_m
 import 'package:currency_converter/features/currency_converter/models/exchange_rate_model.dart';
 import 'package:currency_converter/features/currency_converter/services/currency_api_service.dart';
 import 'package:currency_converter/core/services/favorites_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ConverterProvider extends ChangeNotifier {
   final CurrencyApiService _apiService = CurrencyApiService();
@@ -17,9 +18,17 @@ class ConverterProvider extends ChangeNotifier {
 
   CurrencyModel? baseCurrency;
   CurrencyModel? targetCurrency;
+  CurrencyModel? dashboardBaseCurrency;
 
-  double amount = 1.0;
+  double amount = 0.0;
   double convertedAmount = 0.0;
+
+  double dashboardAmount = 0.0;
+  String inputText = '';
+  String dashboardInputText = '';
+  ExchangeRateModel? dashboardCurrentRates;
+  Map<String, double> dashboardPercentageChanges = {};
+  int dashboardPercentageChangeDays = 0;
 
   bool isLoading = false;
   String? errorMessage;
@@ -31,20 +40,32 @@ class ConverterProvider extends ChangeNotifier {
   Future<void> _init() async {
     await fetchCurrencies();
     favoriteCurrencyCodes = await _favoritesService.getFavorites();
-    favoriteDashboardCurrencyCodes = await _favoritesService.getDashboardFavorites();
+    favoriteDashboardCurrencyCodes = await _favoritesService
+        .getDashboardFavorites();
     _sortCurrencies();
 
     if (currencies.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      final baseCode = prefs.getString('baseCurrencyCode') ?? 'USD';
+      final targetCode = prefs.getString('targetCurrencyCode') ?? 'EUR';
+      final dashboardBaseCode = prefs.getString('dashboardBaseCurrencyCode') ?? 'USD';
+
       baseCurrency = currencies.firstWhere(
-        (c) => c.code == 'USD',
-        orElse: () => currencies.first,
+        (c) => c.code == baseCode,
+        orElse: () => currencies.firstWhere((c) => c.code == 'USD', orElse: () => currencies.first),
       );
       targetCurrency = currencies.firstWhere(
-        (c) => c.code == 'EUR',
-        orElse:
-            () => currencies.length > 1 ? currencies[1] : currencies.first,
+        (c) => c.code == targetCode,
+        orElse: () => currencies.firstWhere((c) => c.code == 'EUR', orElse: () => currencies.length > 1 ? currencies[1] : currencies.first),
       );
-      await _fetchRatesForBaseCurrency();
+      dashboardBaseCurrency = currencies.firstWhere(
+        (c) => c.code == dashboardBaseCode,
+        orElse: () => currencies.firstWhere((c) => c.code == 'USD', orElse: () => baseCurrency!),
+      );
+      await Future.wait([
+        _fetchRatesForBaseCurrency(),
+        _fetchRatesForDashboardBaseCurrency(),
+      ]);
     }
   }
 
@@ -52,7 +73,7 @@ class ConverterProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       currencies = await _apiService.getAvailableCurrencies();
-       _sortCurrencies();
+      _sortCurrencies();
       errorMessage = null;
     } catch (e) {
       errorMessage = e.toString();
@@ -77,14 +98,15 @@ class ConverterProvider extends ChangeNotifier {
 
   Future<void> toggleDashboardFavorite(String code) async {
     await _favoritesService.toggleDashboardFavorite(code);
-    favoriteDashboardCurrencyCodes = await _favoritesService.getDashboardFavorites();
+    favoriteDashboardCurrencyCodes = await _favoritesService
+        .getDashboardFavorites();
     notifyListeners();
   }
 
-  Future<void> reorderDashboardFavorites(int oldIndex, int newIndex) async {
-    await _favoritesService.reorderDashboardFavorites(oldIndex, newIndex);
-    favoriteDashboardCurrencyCodes = await _favoritesService.getDashboardFavorites();
+  Future<void> overwriteDashboardFavorites(List<String> newFavorites) async {
+    favoriteDashboardCurrencyCodes = newFavorites;
     notifyListeners();
+    _favoritesService.saveDashboardFavorites(favoriteDashboardCurrencyCodes);
   }
 
   bool isDashboardFavorite(String code) {
@@ -97,13 +119,16 @@ class ConverterProvider extends ChangeNotifier {
     try {
       currentRates = await _apiService.getExchangeRates(baseCurrency!.code);
       _calculateConversion();
-      
+
       // Fetch percentage changes concurrently or right after
-      _apiService.getPercentageChanges(baseCurrency!.code).then((result) {
-        percentageChanges = result.$1;
-        percentageChangeDays = result.$2;
-        if (percentageChanges.isNotEmpty) notifyListeners();
-      }).catchError((_) {});
+      _apiService
+          .getPercentageChanges(baseCurrency!.code)
+          .then((result) {
+            percentageChanges = result.$1;
+            percentageChangeDays = result.$2;
+            if (percentageChanges.isNotEmpty) notifyListeners();
+          })
+          .catchError((_) {});
 
       errorMessage = null;
     } catch (e) {
@@ -113,15 +138,19 @@ class ConverterProvider extends ChangeNotifier {
     }
   }
 
-  void setBaseCurrency(CurrencyModel currency) {
+  void setBaseCurrency(CurrencyModel currency) async {
     if (baseCurrency?.code == currency.code) return;
     baseCurrency = currency;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('baseCurrencyCode', currency.code);
     _fetchRatesForBaseCurrency(); // Need new rates when base changes
   }
 
-  void setTargetCurrency(CurrencyModel currency) {
+  void setTargetCurrency(CurrencyModel currency) async {
     if (targetCurrency?.code == currency.code) return;
     targetCurrency = currency;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('targetCurrencyCode', currency.code);
     _calculateConversion(); // Only need to recalculate local math
     notifyListeners();
   }
@@ -132,11 +161,59 @@ class ConverterProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void swapCurrencies() {
+  void setDashboardBaseCurrency(CurrencyModel currency) async {
+    if (dashboardBaseCurrency?.code == currency.code) return;
+    dashboardBaseCurrency = currency;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('dashboardBaseCurrencyCode', currency.code);
+    _fetchRatesForDashboardBaseCurrency();
+  }
+
+  void setInputText(String text) {
+    inputText = text;
+  }
+
+  void setDashboardInputText(String text) {
+    dashboardInputText = text;
+  }
+
+  void setDashboardAmount(double newAmount) {
+    dashboardAmount = newAmount;
+    notifyListeners();
+  }
+
+  Future<void> _fetchRatesForDashboardBaseCurrency() async {
+    if (dashboardBaseCurrency == null) return;
+    try {
+      dashboardCurrentRates = await _apiService.getExchangeRates(
+        dashboardBaseCurrency!.code,
+      );
+
+      _apiService
+          .getPercentageChanges(dashboardBaseCurrency!.code)
+          .then((result) {
+            dashboardPercentageChanges = result.$1;
+            dashboardPercentageChangeDays = result.$2;
+            if (dashboardPercentageChanges.isNotEmpty) notifyListeners();
+          })
+          .catchError((_) {});
+    } catch (e) {
+      // Ignored explicit error message for dashboard to prevent blocking UI
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  void swapCurrencies() async {
     if (baseCurrency == null || targetCurrency == null) return;
     final temp = baseCurrency;
     baseCurrency = targetCurrency;
     targetCurrency = temp;
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('baseCurrencyCode', baseCurrency!.code);
+    await prefs.setString('targetCurrencyCode', targetCurrency!.code);
+    
     _fetchRatesForBaseCurrency(); // Important: Must fetch rates for the NEW base currency!
   }
 

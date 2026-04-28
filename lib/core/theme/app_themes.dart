@@ -10,7 +10,7 @@ class AppThemes {
       brightness: Brightness.light,
     ),
     useMaterial3: true,
-    scaffoldBackgroundColor: const Color(0xFFF0F0F3), // Neutral light matte
+    scaffoldBackgroundColor: const Color(0xFFE0E5EC), // Neutral light matte
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -45,7 +45,7 @@ class AppThemes {
     ),
     // specific overrides for dark mode inputs if needed
     inputDecorationTheme: const InputDecorationTheme(
-        hintStyle: TextStyle(color: Colors.white54)
-    )
+      hintStyle: TextStyle(color: Colors.white54),
+    ),
   );
 }
