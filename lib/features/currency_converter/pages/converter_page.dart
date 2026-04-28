@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:currency_converter/features/currency_converter/providers/converter_provider.dart';
-import 'package:currency_converter/core/providers/theme_provider.dart';
 import 'package:currency_converter/core/widgets/neu_container.dart';
+import 'package:currency_converter/core/widgets/pressable_widget.dart';
 import 'package:currency_converter/features/settings/pages/settings_page.dart';
 import 'package:currency_converter/features/currency_converter/widgets/amount_input_field.dart';
 import 'package:currency_converter/features/currency_converter/widgets/currency_selector_dropdown.dart';
@@ -14,6 +14,7 @@ import 'package:currency_converter/core/widgets/skeleton_loader.dart';
 import 'package:intl/intl.dart';
 import 'package:currency_converter/core/utils/number_to_words.dart';
 import 'package:currency_converter/core/services/favorites_service.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class ConverterPage extends StatefulWidget {
   const ConverterPage({super.key});
@@ -27,6 +28,16 @@ class _ConverterPageState extends State<ConverterPage> {
   final FavoritesService _favoritesService = FavoritesService();
   List<String> _amountHistory = [];
   Timer? _saveDebounce;
+
+  static final _numberFormat = NumberFormat('#,##0.00');
+
+  String _formatConvertedAmount(double amount) {
+    String text = _numberFormat.format(amount);
+    if (text.length > 21) {
+      return '...${text.substring(text.length - 18)}';
+    }
+    return text;
+  }
 
   @override
   void initState() {
@@ -64,10 +75,10 @@ class _ConverterPageState extends State<ConverterPage> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
@@ -143,14 +154,12 @@ class _ConverterPageState extends State<ConverterPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Merged Conversion Card
-                  Expanded(
-                    child: NeuContainer(
-                      padding: const EdgeInsets.all(16),
-                      borderRadius: 32,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            Row(
+                  NeuContainer(
+                    padding: const EdgeInsets.all(16),
+                    borderRadius: 32,
+                    child: Column(
+                        children: [
+                          Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Expanded(
@@ -183,7 +192,7 @@ class _ConverterPageState extends State<ConverterPage> {
                                                 (isDark
                                                         ? Colors.white
                                                         : Colors.black)
-                                                    .withOpacity(0.3),
+                                                    .withValues(alpha: 0.3),
                                             blurRadius: 8,
                                             offset: const Offset(0, 4),
                                           ),
@@ -217,95 +226,62 @@ class _ConverterPageState extends State<ConverterPage> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
-                                    const Text(
-                                      'Amount',
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
+                                      AmountInputField(
+                                        controller: _amountController,
+                                        onChanged: (value) {
+                                          provider.setInputText(value);
+                                          _evaluateAmount(provider, value);
+                                          _scheduleSave(value, provider);
+                                        },
+                                        onHistoryTap: () =>
+                                            _showAmountHistory(provider),
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    AmountInputField(
-                                      controller: _amountController,
-                                      onChanged: (value) {
-                                        provider.setInputText(value);
-                                        _evaluateAmount(provider, value);
-                                        _scheduleSave(value, provider);
-                                      },
-                                      onHistoryTap: () =>
-                                          _showAmountHistory(provider),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    const Text(
-                                      'Converted',
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    provider.isLoading
-                                        ? const SizedBox(
-                                            height: 48,
-                                            child: Center(
-                                              child: SkeletonLoader(
-                                                width: 120,
-                                                height: 32,
-                                              ),
-                                            ),
-                                          )
-                                        : InkWell(
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                            onTap: () {
-                                              final text =
-                                                  NumberFormat(
-                                                    '#,##0.00',
-                                                  ).format(
-                                                    provider.convertedAmount,
-                                                  );
-                                              Clipboard.setData(
-                                                ClipboardData(text: text),
-                                              );
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Copied "$text" to clipboard!',
-                                                  ),
-                                                  duration: const Duration(
-                                                    seconds: 2,
-                                                  ),
-                                                  behavior:
-                                                      SnackBarBehavior.floating,
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    height: 115,
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        provider.isLoading
+                                            ? const Center(
+                                                child: SkeletonLoader(
+                                                  width: 120,
+                                                  height: 32,
                                                 ),
-                                              );
-                                            },
-                                            child: SizedBox(
-                                              width: double.infinity,
-                                              height:
-                                                  48, // Fixed height to prevent shifting
-                                              child: FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                alignment:
-                                                    Alignment.centerRight,
-                                                child: Text(
-                                                  NumberFormat(
-                                                    '#,##0.00',
-                                                  ).format(
-                                                    provider.convertedAmount,
+                                              )
+                                            : PressableWidget(
+                                                onTap: () {
+                                                final text =
+                                                    _numberFormat.format(
+                                                      provider.convertedAmount,
+                                                    );
+                                                Clipboard.setData(
+                                                  ClipboardData(text: text),
+                                                );
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Copied "$text" to clipboard!',
+                                                    ),
+                                                    duration: const Duration(
+                                                      seconds: 2,
+                                                    ),
+                                                    behavior:
+                                                        SnackBarBehavior.floating,
                                                   ),
+                                                );
+                                              },
+                                              child: Container(
+                                                alignment: Alignment.bottomRight,
+                                                child: AutoSizeText(
+                                                  _formatConvertedAmount(provider.convertedAmount),
                                                   style: TextStyle(
                                                     fontSize: 32,
                                                     fontWeight: FontWeight.bold,
@@ -313,62 +289,70 @@ class _ConverterPageState extends State<ConverterPage> {
                                                         ? Colors.white
                                                         : Colors.black,
                                                   ),
+                                                  textAlign: TextAlign.right,
+                                                  minFontSize: 14,
+                                                  maxLines: 1,
                                                 ),
                                               ),
                                             ),
+                                      if (provider.convertedAmount >= 0 &&
+                                          provider.targetCurrency != null &&
+                                          !provider.isLoading)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 4.0,
                                           ),
-                                    if (provider.convertedAmount > 0 &&
-                                        provider.targetCurrency != null &&
-                                        !provider.isLoading)
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          top: 4.0,
-                                        ),
-                                        child: Text(
-                                          numberToWords(
-                                            provider.convertedAmount,
+                                          child: AutoSizeText(
+                                            numberToWords(
+                                              provider.convertedAmount,
+                                            ),
+                                            style: TextStyle(
+                                              color: isDark
+                                                  ? Colors.white70
+                                                  : Colors.black54,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                            textAlign: TextAlign.right,
+                                            minFontSize: 8,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          style: TextStyle(
-                                            color: isDark
-                                                ? Colors.white70
-                                                : Colors.black54,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w500,
-                                            fontStyle: FontStyle.italic,
+                                        ),
+                                      if (provider.currentRates != null &&
+                                          provider.targetCurrency != null &&
+                                          !provider.isLoading)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 4.0,
                                           ),
-                                          textAlign: TextAlign.right,
-                                        ),
-                                      ),
-                                    if (provider.currentRates != null &&
-                                        provider.targetCurrency != null &&
-                                        !provider.isLoading)
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          top: 4.0,
-                                        ),
-                                        child: Text(
-                                          '1 ${provider.baseCurrency?.code} = ${provider.currentRates!.rates[provider.targetCurrency!.code]?.toStringAsFixed(4) ?? "N/A"}',
-                                          style: const TextStyle(
-                                            color: Colors.grey,
-                                            fontSize: 10,
+                                          child: Text(
+                                            '1 ${provider.baseCurrency?.code} = ${provider.currentRates!.rates[provider.targetCurrency!.code]?.toStringAsFixed(4) ?? "N/A"} ${provider.targetCurrency!.code}',
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            textAlign: TextAlign.right,
                                           ),
-                                          textAlign: TextAlign.right,
                                         ),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-                  // Rate Calculator Numpad
-                  Expanded(child: _buildNumpad(provider, isDark)),
+                // Rate Calculator Numpad
+                Expanded(
+                  flex: 1,
+                  child: _buildNumpad(provider, isDark),
+                ),
                 ],
               ),
             );
@@ -436,18 +420,23 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 
   void _onCalcBtn(String text, ConverterProvider provider) {
+    String logicalText = text;
+    if (text == '÷') logicalText = '/';
+    if (text == '×') logicalText = '*';
+    if (text == 'C') logicalText = 'AC';
+
     String current = _amountController.text.replaceAll(',', '');
-    if (text == 'AC') {
+    if (logicalText == 'AC') {
       _amountController.text = '';
       _evaluateAmount(provider, '');
-    } else if (text == '⌫') {
+    } else if (logicalText == '⌫') {
       if (current.isNotEmpty) {
         String newText = current.substring(0, current.length - 1);
         _amountController.text = _formatInputExpression(newText);
         provider.setInputText(_amountController.text);
         _evaluateAmount(provider, _amountController.text);
       }
-    } else if (text == '=') {
+    } else if (logicalText == '=') {
       try {
         GrammarParser p = GrammarParser();
         Expression exp = p.parse(current);
@@ -472,19 +461,19 @@ class _ConverterPageState extends State<ConverterPage> {
       }
     } else {
       // Append text
-      bool isOp = ['%', '+', '-', '*', '/'].contains(text);
-      if (current == '0' && text != '.' && !isOp) {
-        current = text;
+      bool isOp = ['%', '+', '-', '*', '/'].contains(logicalText);
+      if (current == '0' && logicalText != '.' && !isOp) {
+        current = logicalText;
       } else {
         if (isOp && current.isNotEmpty) {
           String lastChar = current[current.length - 1];
           if (['%', '+', '-', '*', '/'].contains(lastChar)) {
-            current = current.substring(0, current.length - 1) + text;
+            current = current.substring(0, current.length - 1) + logicalText;
           } else {
-            current = current + text;
+            current = current + logicalText;
           }
         } else {
-          current = current + text;
+          current = current + logicalText;
         }
       }
       _amountController.text = _formatInputExpression(current);
@@ -531,24 +520,16 @@ class _ConverterPageState extends State<ConverterPage> {
 
   Widget _buildNumpad(ConverterProvider provider, bool isDark) {
     final List<List<String>> keys = [
-      ['7', '8', '9', '%', '⌫'],
-      ['4', '5', '6', '+', '-'],
-      ['1', '2', '3', '*', '/'],
-      ['00', '0', '.', '=', 'AC'],
+      ['C', '⌫', '%', '÷'],
+      ['7', '8', '9', '×'],
+      ['4', '5', '6', '-'],
+      ['1', '2', '3', '+'],
+      ['0', '.', '00', '='],
     ];
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Rate Calculator',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey,
-          ),
-        ),
-        const SizedBox(height: 12),
         Expanded(
           child: NeuContainer(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
@@ -560,6 +541,7 @@ class _ConverterPageState extends State<ConverterPage> {
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: row.map((key) {
                         return Expanded(
                           child: Padding(
@@ -584,6 +566,114 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 }
 
+/// A standalone numpad bottom sheet used by the dashboard page.
+/// It mirrors the converter's numpad but lives in a modal sheet.
+class DashboardNumpadSheet extends StatelessWidget {
+  final TextEditingController controller;
+  final ValueChanged<String> onCalcBtn;
+
+  const DashboardNumpadSheet({
+    super.key,
+    required this.controller,
+    required this.onCalcBtn,
+  });
+
+  static const List<List<String>> _keys = [
+    ['C', '⌫', '%', '÷'],
+    ['7', '8', '9', '×'],
+    ['4', '5', '6', '-'],
+    ['1', '2', '3', '+'],
+    ['0', '.', '00', '='],
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black26,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            // Live input display
+            AnimatedBuilder(
+              animation: controller,
+              builder: (context, _) {
+                final text = controller.text;
+                return NeuContainer(
+                  isPressed: true,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  borderRadius: 16,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      text.isEmpty ? '0' : text,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: text.isEmpty
+                            ? (isDark ? Colors.white24 : Colors.black26)
+                            : (isDark ? Colors.white : Colors.black),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            // Numpad grid
+            NeuContainer(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              borderRadius: 32,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: _keys.map((row) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: row.map((key) {
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: SizedBox(
+                                height: 64,
+                                child: _NumpadButton(
+                                  text: key,
+                                  isDark: isDark,
+                                  onTap: () => onCalcBtn(key),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _NumpadButton extends StatefulWidget {
   final String text;
   final bool isDark;
@@ -602,20 +692,24 @@ class _NumpadButton extends StatefulWidget {
 class _NumpadButtonState extends State<_NumpadButton>
     with SingleTickerProviderStateMixin {
   bool _isPressed = false;
+  bool _pendingRelease = false;
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+
+  static const _minPressDuration = Duration(milliseconds: 120);
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 60),
+      reverseDuration: const Duration(milliseconds: 140),
     );
     _scaleAnimation = Tween<double>(
       begin: 1.0,
-      end: 0.9,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+      end: 0.86,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override
@@ -624,37 +718,63 @@ class _NumpadButtonState extends State<_NumpadButton>
     super.dispose();
   }
 
+  void _release() {
+    if (!mounted) return;
+    setState(() {
+      _isPressed = false;
+      _pendingRelease = false;
+    });
+    _controller.reverse();
+  }
+
   void _handleTapDown(TapDownDetails details) {
+    _pendingRelease = false;
     setState(() => _isPressed = true);
     _controller.forward();
+    HapticFeedback.lightImpact();
   }
 
   void _handleTapUp(TapUpDetails details) {
-    setState(() => _isPressed = false);
-    _controller.reverse();
-    widget.onTap();
+    widget.onTap(); // fire action immediately
+    _pendingRelease = true;
+    Future.delayed(_minPressDuration, () {
+      if (_pendingRelease) _release();
+    });
   }
 
   void _handleTapCancel() {
-    setState(() => _isPressed = false);
-    _controller.reverse();
+    _release();
   }
 
   @override
   Widget build(BuildContext context) {
-    bool isOp = ['%', '⌫', '+', '-', '*', '/', '=', 'AC'].contains(widget.text);
-    bool isTextSized = [
-      '%',
-      '⌫',
-      '+',
-      '-',
-      '*',
-      '/',
-      '=',
-      'AC',
-      '00',
-      '.',
-    ].contains(widget.text);
+    bool isEquals = widget.text == '=';
+    bool isOperator = ['÷', '×', '-', '+'].contains(widget.text);
+    bool isAction = ['C', '⌫', '%'].contains(widget.text);
+
+    Color getTextColor() {
+      if (_isPressed && isOperator) return Colors.blue.shade200;
+      if (_isPressed && isAction) return Colors.orange.shade300;
+      if (isEquals) return Colors.white;
+      if (isOperator) return Colors.blueAccent;
+      if (isAction) return Colors.grey;
+      return widget.isDark ? Colors.white : Colors.black;
+    }
+
+    Color? getPressFlashColor() {
+      if (!_isPressed) return null;
+      if (isEquals) return Colors.blue.shade300;
+      if (isOperator) return Colors.blueAccent.withValues(alpha: 0.20);
+      if (isAction) return Colors.orange.withValues(alpha: 0.15);
+      return widget.isDark
+          ? Colors.white.withValues(alpha: 0.10)
+          : Colors.black.withValues(alpha: 0.07);
+    }
+
+    Color? getBgColor() {
+      if (isEquals) return getPressFlashColor() ?? Colors.blueAccent;
+      return getPressFlashColor();
+    }
 
     return GestureDetector(
       onTapDown: _handleTapDown,
@@ -665,22 +785,25 @@ class _NumpadButtonState extends State<_NumpadButton>
         child: NeuContainer(
           borderRadius: 24,
           isPressed: _isPressed,
+          color: getBgColor(),
+          width: double.infinity,
+          height: double.infinity,
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: widget.text == '⌫'
                   ? Icon(
-                      Icons.backspace_rounded,
-                      size: 28,
-                      color: widget.isDark ? Colors.white : Colors.black,
+                      Icons.backspace_outlined,
+                      size: 32,
+                      color: getTextColor(),
                     )
                   : Text(
                       widget.text,
                       style: TextStyle(
-                        fontSize: isTextSized && widget.text == '00' ? 24 : 32,
-                        fontWeight: isOp ? FontWeight.bold : FontWeight.w500,
-                        color: widget.isDark ? Colors.white : Colors.black,
+                        fontSize: widget.text == '00' ? 28 : 32,
+                        fontWeight: (isOperator || isEquals) ? FontWeight.bold : FontWeight.w500,
+                        color: getTextColor(),
                       ),
                     ),
             ),

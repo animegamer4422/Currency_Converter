@@ -9,6 +9,7 @@ class NeuContainer extends StatelessWidget {
   final double? width;
   final double? height;
   final BoxShape shape;
+  final Color? color;
 
   const NeuContainer({
     super.key,
@@ -20,26 +21,59 @@ class NeuContainer extends StatelessWidget {
     this.width,
     this.height,
     this.shape = BoxShape.rectangle,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark
-        ? const Color(0xFF212121)
-        : const Color(0xFFF0F0F3);
-    final pressedBackgroundColor = isDark
-        ? const Color(0xFF1A1A1A)
-        : const Color(0xFFE6E6E9);
 
-    final darkShadowColor = isDark
-        ? const Color(0xFF101010)
-        : const Color(0xFFCDCDD0);
-    final lightShadowColor = isDark
-        ? const Color(0xFF2E2E2E)
-        : const Color(0xFFFFFFFF);
+    final backgroundColor = color ??
+        (isDark ? const Color(0xFF252525) : const Color(0xFFE0E5EC));
 
-    return Container(
+    final pressedBackgroundColor = color != null
+        ? Color.lerp(color!, isDark ? Colors.black : Colors.grey.shade400, 0.25)!
+        : (isDark ? const Color(0xFF1C1C1C) : const Color(0xFFCDD4E0));
+
+    final darkShadow =
+        isDark ? const Color(0xFF0D0D0D) : const Color(0xFFA3B1C6);
+    final lightShadow =
+        isDark ? const Color(0xFF333333) : const Color(0xFFFFFFFF);
+
+    final List<BoxShadow> raisedShadows = [
+      BoxShadow(
+        color: darkShadow,
+        offset: const Offset(5, 5),
+        blurRadius: 10,
+        spreadRadius: 0,
+      ),
+      BoxShadow(
+        color: lightShadow,
+        offset: const Offset(-5, -5),
+        blurRadius: 10,
+        spreadRadius: 0,
+      ),
+    ];
+
+    // Simulate inset by flipping shadow directions + using darker bg
+    final List<BoxShadow> pressedShadows = [
+      BoxShadow(
+        color: darkShadow.withValues(alpha: 0.9),
+        offset: const Offset(2, 2),
+        blurRadius: 5,
+        spreadRadius: 0,
+      ),
+      BoxShadow(
+        color: lightShadow.withValues(alpha: 0.5),
+        offset: const Offset(-1, -1),
+        blurRadius: 3,
+        spreadRadius: 0,
+      ),
+    ];
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 60),
+      curve: Curves.easeOut,
       padding: padding,
       margin: margin,
       width: width,
@@ -50,30 +84,10 @@ class NeuContainer extends StatelessWidget {
             ? null
             : BorderRadius.circular(borderRadius),
         shape: shape,
-        boxShadow: isPressed
-            ? [
-                // Inset shadow effect (simulated via decoration tricks or just no outset for simplicity)
-                // True inset shadows require inner container, but removing outset gives a pressed flat look.
-                // We could use an inner shadow package, but let\'s keep it dependency free and visually pressed.
-              ]
-            : [
-                BoxShadow(
-                  color: darkShadowColor,
-                  offset: const Offset(12, 12),
-                  blurRadius: 24,
-                  spreadRadius: 1,
-                ),
-                BoxShadow(
-                  color: lightShadowColor,
-                  offset: const Offset(-12, -12),
-                  blurRadius: 24,
-                  spreadRadius: 1,
-                ),
-              ],
+        boxShadow: isPressed ? pressedShadows : raisedShadows,
       ),
-      // If pressed, slightly shift the content down
       child: isPressed
-          ? Transform.translate(offset: const Offset(2, 2), child: child)
+          ? Transform.translate(offset: const Offset(1.5, 1.5), child: child)
           : child,
     );
   }

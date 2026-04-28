@@ -237,7 +237,7 @@ class _HistoricalChartWidgetState extends State<HistoricalChartWidget> {
                               show: true,
                               color: Theme.of(
                                 context,
-                              ).colorScheme.primary.withOpacity(0.15),
+                              ).colorScheme.primary.withValues(alpha: 0.15),
                             ),
                           ),
                         ],

@@ -1,5 +1,5 @@
 String numberToWords(double number) {
-  if (number == 0) return 'zero';
+  if (number == 0) return 'zero point zero';
 
   final int integerPart = number.truncate();
   final int fractionalPart = ((number - integerPart) * 100).round();

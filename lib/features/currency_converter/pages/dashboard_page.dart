@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:currency_converter/features/currency_converter/providers/converter_provider.dart';
 import 'package:currency_converter/core/widgets/neu_container.dart';
+import 'package:currency_converter/core/widgets/pressable_widget.dart';
 import 'package:currency_converter/features/settings/pages/settings_page.dart';
 import 'package:currency_converter/features/currency_converter/widgets/currency_selector_dropdown.dart';
 import 'package:currency_converter/features/currency_converter/widgets/amount_input_field.dart';
@@ -12,6 +13,7 @@ import 'package:currency_converter/core/widgets/skeleton_loader.dart';
 import 'package:currency_converter/features/currency_converter/widgets/amount_history_sheet.dart';
 import 'package:math_expressions/math_expressions.dart' hide Stack;
 import 'package:currency_converter/core/services/favorites_service.dart';
+import 'package:currency_converter/features/currency_converter/pages/converter_page.dart' show DashboardNumpadSheet;
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -200,29 +202,8 @@ class _DashboardPageState extends State<DashboardPage> {
                         const SizedBox(height: 8),
                         AmountInputField(
                           controller: _amountController,
-                          onChanged: (value) {
-                            provider.setDashboardInputText(value);
-                            if (value.isEmpty) {
-                              provider.setDashboardAmount(0.0);
-                              return;
-                            }
-                            try {
-                              GrammarParser p = GrammarParser();
-                              Expression exp = p.parse(value);
-                              ContextModel cm = ContextModel();
-                              double evaluatedAmount = exp.evaluate(
-                                EvaluationType.REAL,
-                                cm,
-                              );
-                              provider.setDashboardAmount(evaluatedAmount);
-                            } catch (e) {
-                              final fallback = double.tryParse(value);
-                              if (fallback != null) {
-                                provider.setDashboardAmount(fallback);
-                              }
-                            }
-                            _scheduleSave(value, provider);
-                          },
+                          onChanged: (value) {},
+                          onTap: () => _showNumpadSheet(provider),
                           onHistoryTap: () => _showAmountHistory(provider),
                         ),
                       ],
@@ -297,7 +278,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     final baseCurrency = provider.dashboardBaseCurrency;
                     final displayList = baseCurrency != null
                         ? [baseCurrency, ...favorites]
-                        : favorites;
+                        : [...favorites];
 
                     return Expanded(
                       child: ReorderableListView.builder(
@@ -317,21 +298,23 @@ class _DashboardPageState extends State<DashboardPage> {
                         },
                         onReorder: (oldIndex, newIndex) {
                           if (!_isEditMode) return;
-                          // Index 0 is always the base currency — never reorder it
                           if (oldIndex == 0 || newIndex == 0) return;
-                          // The last item is the "add" button — guard against it
                           if (oldIndex >= displayList.length ||
-                              newIndex > displayList.length)
+                              newIndex > displayList.length) {
                             return;
-                          // Only subtract 1 from each index to account for the base
-                          // currency sitting at position 0 in displayList.
-                          // FavoritesService.reorderDashboardFavorites already handles
-                          // the (oldIndex < newIndex) → newIndex -= 1 shift itself,
-                          // so we must NOT apply it here too.
-                          provider.reorderDashboardFavorites(
-                            oldIndex - 1,
-                            newIndex - 1,
-                          );
+                          }
+                          
+                          if (oldIndex < newIndex) newIndex -= 1;
+                          
+                          final item = displayList.removeAt(oldIndex);
+                          displayList.insert(newIndex, item);
+                          
+                          final newFavorites = displayList
+                              .skip(baseCurrency != null ? 1 : 0)
+                              .map((c) => c.code)
+                              .toList();
+                              
+                          provider.overwriteDashboardFavorites(newFavorites);
                         },
                         itemBuilder: (context, index) {
                           if (index == displayList.length) {
@@ -420,25 +403,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           return Padding(
                             key: ValueKey(target.code),
                             padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(24),
-                              onLongPress: _isEditMode
-                                  ? null
-                                  : () {
-                                      final text =
-                                          '${converted.toStringAsFixed(2)} ${target.code}';
-                                      Clipboard.setData(
-                                        ClipboardData(text: text),
-                                      );
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text('Copied "$text"'),
-                                          duration:
-                                              const Duration(seconds: 1),
-                                        ),
-                                      );
-                                    },
+                            child: PressableWidget(
                               onTap: (_isEditMode || isBase)
                                   ? null
                                   : () {
@@ -452,6 +417,23 @@ class _DashboardPageState extends State<DashboardPage> {
                                                 .dashboardBaseCurrency?.code,
                                             targetCurrencyCode: target.code,
                                           ),
+                                        ),
+                                      );
+                                    },
+                              onLongPress: (_isEditMode || isBase)
+                                  ? null
+                                  : () {
+                                      final text =
+                                          '${converted.toStringAsFixed(2)} ${target.code}';
+                                      Clipboard.setData(
+                                        ClipboardData(text: text),
+                                      );
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text('Copied "$text"'),
+                                          duration:
+                                              const Duration(seconds: 1),
                                         ),
                                       );
                                     },
@@ -592,6 +574,138 @@ class _DashboardPageState extends State<DashboardPage> {
           },
         ),
       ),
+    );
+  }
+
+  // ── Numpad helpers ──────────────────────────────────────────────────────────
+
+  String _formatInputExpression(String input) {
+    String sanitized = input.replaceAll(',', '');
+    String result = '';
+    String currentNumber = '';
+    for (int i = 0; i < sanitized.length; i++) {
+      var char = sanitized[i];
+      if (RegExp(r'[0-9.]').hasMatch(char)) {
+        currentNumber += char;
+      } else {
+        if (currentNumber.isNotEmpty) {
+          result += _formatSimpleNumber(currentNumber);
+          currentNumber = '';
+        }
+        result += char;
+      }
+    }
+    if (currentNumber.isNotEmpty) result += _formatSimpleNumber(currentNumber);
+    return result;
+  }
+
+  String _formatSimpleNumber(String numStr) {
+    List<String> parts = numStr.split('.');
+    String intPart = parts[0];
+    if (intPart.isNotEmpty) {
+      intPart = intPart.replaceAllMapped(
+        RegExp(r'\B(?=(\d{3})+(?!\d))'),
+        (Match m) => ',',
+      );
+    }
+    return parts.length > 1 ? '$intPart.${parts[1]}' : intPart;
+  }
+
+  void _onCalcBtn(String text, ConverterProvider provider) {
+    String logicalText = text;
+    if (text == '÷') logicalText = '/';
+    if (text == '×') logicalText = '*';
+    if (text == 'C') logicalText = 'AC';
+
+    String current = _amountController.text.replaceAll(',', '');
+
+    if (logicalText == 'AC') {
+      _amountController.text = '';
+      provider.setDashboardInputText('');
+      provider.setDashboardAmount(0.0);
+    } else if (logicalText == '⌫') {
+      if (current.isNotEmpty) {
+        String newText = current.substring(0, current.length - 1);
+        _amountController.text = _formatInputExpression(newText);
+        provider.setDashboardInputText(_amountController.text);
+        _evaluateDashboardAmount(provider, _amountController.text);
+      }
+    } else if (logicalText == '=') {
+      try {
+        GrammarParser p = GrammarParser();
+        Expression exp = p.parse(current);
+        ContextModel cm = ContextModel();
+        double ev = exp.evaluate(EvaluationType.REAL, cm);
+        if (ev == ev.truncateToDouble()) {
+          _amountController.text =
+              _formatInputExpression(ev.toInt().toString());
+        } else {
+          String str = ev.toStringAsFixed(4);
+          str = str.replaceAll(RegExp(r'0*$'), '');
+          str = str.replaceAll(RegExp(r'\.$'), '');
+          _amountController.text = _formatInputExpression(str);
+        }
+        provider.setDashboardInputText(_amountController.text);
+        provider.setDashboardAmount(ev);
+        _scheduleSave(_amountController.text, provider);
+      } catch (_) {}
+    } else {
+      bool isOp = ['%', '+', '-', '*', '/'].contains(logicalText);
+      if (current == '0' && logicalText != '.' && !isOp) {
+        current = logicalText;
+      } else {
+        if (isOp && current.isNotEmpty) {
+          String lastChar = current[current.length - 1];
+          if (['%', '+', '-', '*', '/'].contains(lastChar)) {
+            current = current.substring(0, current.length - 1) + logicalText;
+          } else {
+            current = current + logicalText;
+          }
+        } else {
+          current = current + logicalText;
+        }
+      }
+      _amountController.text = _formatInputExpression(current);
+      provider.setDashboardInputText(_amountController.text);
+      _evaluateDashboardAmount(provider, _amountController.text);
+      _scheduleSave(_amountController.text, provider);
+    }
+  }
+
+  void _evaluateDashboardAmount(ConverterProvider provider, String value) {
+    if (value.isEmpty) {
+      provider.setDashboardAmount(0.0);
+      return;
+    }
+    String sanitized = value.replaceAll(',', '');
+    try {
+      GrammarParser p = GrammarParser();
+      Expression exp = p.parse(sanitized);
+      ContextModel cm = ContextModel();
+      double ev = exp.evaluate(EvaluationType.REAL, cm);
+      provider.setDashboardAmount(ev);
+    } catch (_) {
+      final fallback = double.tryParse(sanitized);
+      if (fallback != null) provider.setDashboardAmount(fallback);
+    }
+  }
+
+  void _showNumpadSheet(ConverterProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return DashboardNumpadSheet(
+          controller: _amountController,
+          onCalcBtn: (key) {
+            _onCalcBtn(key, provider);
+            if (key == '=') {
+              Navigator.pop(ctx);
+            }
+          },
+        );
+      },
     );
   }
 }

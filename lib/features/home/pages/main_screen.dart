@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:currency_converter/core/widgets/pressable_widget.dart';
 import 'package:currency_converter/features/currency_converter/pages/converter_page.dart';
 import 'package:currency_converter/features/currency_converter/pages/dashboard_page.dart';
 
@@ -75,7 +76,7 @@ class _MainScreenState extends State<MainScreen> {
         : Colors.grey;
 
     return Expanded(
-      child: GestureDetector(
+      child: PressableWidget(
         onTap: () {
           if (!isSelected) {
             _pageController.animateToPage(
@@ -85,9 +86,8 @@ class _MainScreenState extends State<MainScreen> {
             );
           }
         },
-        behavior: HitTestBehavior.opaque,
         child: Container(
-          color: Colors.transparent, // expand gesture area
+          color: Colors.transparent,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,

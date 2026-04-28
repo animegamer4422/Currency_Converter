@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:currency_converter/core/widgets/neu_container.dart';
+import 'package:currency_converter/core/widgets/pressable_widget.dart';
 import 'package:currency_converter/features/currency_converter/providers/converter_provider.dart';
 import 'package:math_expressions/math_expressions.dart' hide Stack;
 
@@ -101,7 +102,7 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.5),
+                color: Colors.grey.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -115,7 +116,7 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
                 Icon(
                   Icons.history_rounded,
                   size: 24,
-                  color: textColor.withOpacity(0.7),
+                  color: textColor.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -151,7 +152,7 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
                   hintText: 'Search history (e.g., 50, USD)...',
                   hintStyle: TextStyle(color: Colors.grey.shade500),
                   border: InputBorder.none,
-                  icon: Icon(Icons.search, color: textColor.withOpacity(0.5)),
+                  icon: Icon(Icons.search, color: textColor.withValues(alpha: 0.5)),
                 ),
                 style: TextStyle(color: textColor),
                 onChanged: (value) {
@@ -196,8 +197,7 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(20),
+                        child: PressableWidget(
                           onTap: () {
                             widget.onSelect(
                               displayAmount,
@@ -213,7 +213,7 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
                                 Icon(
                                   Icons.history_rounded,
                                   size: 24,
-                                  color: textColor.withOpacity(0.5),
+                                  color: textColor.withValues(alpha: 0.5),
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
@@ -249,7 +249,7 @@ class _AmountHistorySheetState extends State<AmountHistorySheet> {
                                 Icon(
                                   Icons.arrow_forward_ios_rounded,
                                   size: 16,
-                                  color: textColor.withOpacity(0.3),
+                                  color: textColor.withValues(alpha: 0.3),
                                 ),
                               ],
                             ),
