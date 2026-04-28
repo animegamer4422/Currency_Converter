@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class ChartRevealWidget extends StatelessWidget {
   final Widget child;
-  
+
   const ChartRevealWidget({super.key, required this.child});
 
   @override
@@ -28,7 +28,7 @@ class ChartRevealWidget extends StatelessWidget {
           },
           child: child,
         );
-      }
+      },
     );
   }
 }

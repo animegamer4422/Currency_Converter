@@ -49,15 +49,21 @@ class FavoritesService {
     return prefs.getStringList(key) ?? [];
   }
 
-  Future<void> saveAmountToHistory(String amount, String baseCode, String targetCode, {bool isDashboard = false}) async {
+  Future<void> saveAmountToHistory(
+    String amount,
+    String baseCode,
+    String targetCode, {
+    bool isDashboard = false,
+  }) async {
     if (amount.trim().isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
-    
+
     final key = isDashboard ? _dashboardAmountHistoryKey : _amountHistoryKey;
     final history = prefs.getStringList(key) ?? [];
-    
+
     // Attempt to store structured info as JSON in the list
-    final String entry = '{"amount":"$amount", "base":"$baseCode", "target":"$targetCode"}';
+    final String entry =
+        '{"amount":"$amount", "base":"$baseCode", "target":"$targetCode"}';
 
     // Remove duplicate if exists, then add at front
     history.remove(entry);
@@ -72,14 +78,19 @@ class FavoritesService {
   Future<void> reorderDashboardFavorites(int oldIndex, int newIndex) async {
     final prefs = await SharedPreferences.getInstance();
     final favorites = prefs.getStringList(_dashboardFavoritesKey) ?? [];
-    
+
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
     final item = favorites.removeAt(oldIndex);
     favorites.insert(newIndex, item);
-    
+
     await prefs.setStringList(_dashboardFavoritesKey, favorites);
+  }
+
+  Future<void> saveDashboardFavorites(List<String> codes) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_dashboardFavoritesKey, codes);
   }
 
   Future<void> clearAmountHistory({bool isDashboard = false}) async {

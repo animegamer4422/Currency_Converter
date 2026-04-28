@@ -46,7 +46,7 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> _loadThemeFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final themeString = prefs.getString(_themePrefKey);
-    
+
     if (themeString != null) {
       if (themeString == 'light') {
         _themeMode = ThemeMode.light;
@@ -60,10 +60,10 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> _saveThemeToPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     String themeString = 'system';
-    
+
     if (_themeMode == ThemeMode.light) themeString = 'light';
     if (_themeMode == ThemeMode.dark) themeString = 'dark';
-    
+
     await prefs.setString(_themePrefKey, themeString);
   }
 }
