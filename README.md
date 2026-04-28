@@ -4,7 +4,7 @@ A premium, feature-rich currency conversion application built with Flutter. This
 
 ## ✨ Features
 
-- **Real-time Conversion**: Instantly convert between 150+ world currencies with up-to-date exchange rates.
+- **Real-time Conversion**: Instantly convert between major world currencies with up-to-date exchange rates from Frankfurter.
 - **Interactive Dashboard**: A clean overview of your favorite currencies and recent market trends.
 - **Historical Charts**: Visualize currency fluctuations over time with deep history tracking and interactive fl_charts.
 - **Custom Numpad**: Optimized input experience with a custom-designed numeric keypad for faster entries.
@@ -18,6 +18,7 @@ A premium, feature-rich currency conversion application built with Flutter. This
 - **State Management**: [Provider](https://pub.dev/packages/provider)
 - **Networking**: [HTTP](https://pub.dev/packages/http)
 - **Data Visualization**: [fl_chart](https://pub.dev/packages/fl_chart)
+- **API Source**: [Frankfurter](https://www.frankfurter.app/)
 - **Local Storage**: [Shared Preferences](https://pub.dev/packages/shared_preferences)
 - **Localization**: [Intl](https://pub.dev/packages/intl)
 
@@ -27,7 +28,7 @@ A premium, feature-rich currency conversion application built with Flutter. This
 
 - Flutter SDK (>= 3.10.8)
 - Android Studio / VS Code
-- A valid API key for the exchange rate service (configured in `lib/features/currency_converter/services/currency_api_service.dart`)
+- No API key required (uses the free [Frankfurter API](https://www.frankfurter.app/))
 
 ### Installation
 
