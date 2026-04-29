@@ -1,0 +1,33 @@
+{
+  "entries": [
+    {
+      "relPath": "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java",
+      "language": "java",
+      "symbols": [
+        "GeneratedPluginRegistrant"
+      ],
+      "imports": [
+        "androidx.annotation.Keep",
+        "androidx.annotation.NonNull",
+        "io.flutter.Log",
+        "io.flutter.embedding.engine.FlutterEngine"
+      ]
+    },
+    {
+      "relPath": "ios/Flutter/ephemeral/flutter_lldb_helper.py",
+      "language": "py",
+      "symbols": [
+        "handle_new_rx_page",
+        "__lldb_init_module"
+      ],
+      "imports": [
+        "lldb"
+      ]
+    }
+  ],
+  "totalFiles": 2,
+  "indexedFiles": 2,
+  "method": "regex",
+  "generatedAt": 1777468199329,
+  "merkleRoot": "db921a36eb97c71ed14c75c8340e25514e00340d914b983dba76d949c61878f5"
+}

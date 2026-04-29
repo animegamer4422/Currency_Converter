@@ -158,201 +158,188 @@ class _ConverterPageState extends State<ConverterPage> {
                     padding: const EdgeInsets.all(16),
                     borderRadius: 32,
                     child: Column(
-                        children: [
-                          Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: CurrencySelectorDropdown(
-                                    label: 'From',
-                                    selectedCurrency: provider.baseCurrency,
-                                    currencies: provider.currencies,
-                                    onChanged: (c) =>
-                                        provider.setBaseCurrency(c!),
-                                    onFavoriteToggled: provider.toggleFavorite,
-                                    isFavorite: provider.isFavorite,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                  child: GestureDetector(
-                                    onTap: provider.swapCurrencies,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? Colors.white
-                                            : Colors.black,
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color:
-                                                (isDark
-                                                        ? Colors.white
-                                                        : Colors.black)
-                                                    .withValues(alpha: 0.3),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Icon(
-                                        Icons.swap_horiz,
-                                        color: isDark
-                                            ? Colors.black
-                                            : Colors.white,
-                                        size: 24,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: CurrencySelectorDropdown(
-                                    label: 'To',
-                                    selectedCurrency: provider.targetCurrency,
-                                    currencies: provider.currencies,
-                                    onChanged: (c) =>
-                                        provider.setTargetCurrency(c!),
-                                    onFavoriteToggled: provider.toggleFavorite,
-                                    isFavorite: provider.isFavorite,
-                                  ),
-                                ),
-                              ],
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: CurrencySelectorDropdown(
+                                label: 'From',
+                                selectedCurrency: provider.baseCurrency,
+                                currencies: provider.currencies,
+                                onChanged: (c) => provider.setBaseCurrency(c!),
+                                onFavoriteToggled: provider.toggleFavorite,
+                                isFavorite: provider.isFavorite,
+                              ),
                             ),
-                            const SizedBox(height: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                      AmountInputField(
-                                        controller: _amountController,
-                                        onChanged: (value) {
-                                          provider.setInputText(value);
-                                          _evaluateAmount(provider, value);
-                                          _scheduleSave(value, provider);
-                                        },
-                                        onHistoryTap: () =>
-                                            _showAmountHistory(provider),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              child: GestureDetector(
+                                onTap: provider.swapCurrencies,
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.white : Colors.black,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            (isDark
+                                                    ? Colors.white
+                                                    : Colors.black)
+                                                .withValues(alpha: 0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
-                                  SizedBox(
-                                    height: 115,
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: [
-                                        provider.isLoading
-                                            ? const Center(
-                                                child: SkeletonLoader(
-                                                  width: 120,
-                                                  height: 32,
-                                                ),
-                                              )
-                                            : PressableWidget(
-                                                onTap: () {
-                                                final text =
-                                                    _numberFormat.format(
-                                                      provider.convertedAmount,
-                                                    );
-                                                Clipboard.setData(
-                                                  ClipboardData(text: text),
-                                                );
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      'Copied "$text" to clipboard!',
-                                                    ),
-                                                    duration: const Duration(
-                                                      seconds: 2,
-                                                    ),
-                                                    behavior:
-                                                        SnackBarBehavior.floating,
-                                                  ),
-                                                );
-                                              },
-                                              child: Container(
-                                                alignment: Alignment.bottomRight,
-                                                child: AutoSizeText(
-                                                  _formatConvertedAmount(provider.convertedAmount),
-                                                  style: TextStyle(
-                                                    fontSize: 32,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: isDark
-                                                        ? Colors.white
-                                                        : Colors.black,
-                                                  ),
-                                                  textAlign: TextAlign.right,
-                                                  minFontSize: 14,
-                                                  maxLines: 1,
-                                                ),
-                                              ),
-                                            ),
-                                      if (provider.convertedAmount >= 0 &&
-                                          provider.targetCurrency != null &&
-                                          !provider.isLoading)
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 4.0,
-                                          ),
-                                          child: AutoSizeText(
-                                            numberToWords(
-                                              provider.convertedAmount,
-                                            ),
-                                            style: TextStyle(
-                                              color: isDark
-                                                  ? Colors.white70
-                                                  : Colors.black54,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w500,
-                                              fontStyle: FontStyle.italic,
-                                            ),
-                                            textAlign: TextAlign.right,
-                                            minFontSize: 8,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      if (provider.currentRates != null &&
-                                          provider.targetCurrency != null &&
-                                          !provider.isLoading)
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 4.0,
-                                          ),
-                                          child: Text(
-                                            '1 ${provider.baseCurrency?.code} = ${provider.currentRates!.rates[provider.targetCurrency!.code]?.toStringAsFixed(4) ?? "N/A"} ${provider.targetCurrency!.code}',
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            textAlign: TextAlign.right,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                  child: Icon(
+                                    Icons.swap_horiz,
+                                    color: isDark ? Colors.black : Colors.white,
+                                    size: 24,
                                   ),
-                                ],
+                                ),
                               ),
+                            ),
+                            Expanded(
+                              child: CurrencySelectorDropdown(
+                                label: 'To',
+                                selectedCurrency: provider.targetCurrency,
+                                currencies: provider.currencies,
+                                onChanged: (c) =>
+                                    provider.setTargetCurrency(c!),
+                                onFavoriteToggled: provider.toggleFavorite,
+                                isFavorite: provider.isFavorite,
+                              ),
+                            ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                AmountInputField(
+                                  controller: _amountController,
+                                  onChanged: (value) {
+                                    provider.setInputText(value);
+                                    _evaluateAmount(provider, value);
+                                    _scheduleSave(value, provider);
+                                  },
+                                  onHistoryTap: () =>
+                                      _showAmountHistory(provider),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 115,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  provider.isLoading
+                                      ? const Center(
+                                          child: SkeletonLoader(
+                                            width: 120,
+                                            height: 32,
+                                          ),
+                                        )
+                                      : PressableWidget(
+                                          onTap: () {
+                                            final text = _numberFormat.format(
+                                              provider.convertedAmount,
+                                            );
+                                            Clipboard.setData(
+                                              ClipboardData(text: text),
+                                            );
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Copied "$text" to clipboard!',
+                                                ),
+                                                duration: const Duration(
+                                                  seconds: 2,
+                                                ),
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                              ),
+                                            );
+                                          },
+                                          child: Container(
+                                            alignment: Alignment.bottomRight,
+                                            child: AutoSizeText(
+                                              _formatConvertedAmount(
+                                                provider.convertedAmount,
+                                              ),
+                                              style: TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold,
+                                                color: isDark
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                              ),
+                                              textAlign: TextAlign.right,
+                                              minFontSize: 14,
+                                              maxLines: 1,
+                                            ),
+                                          ),
+                                        ),
+                                  if (provider.convertedAmount >= 0 &&
+                                      provider.targetCurrency != null &&
+                                      !provider.isLoading)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: AutoSizeText(
+                                        numberToWords(provider.convertedAmount),
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white70
+                                              : Colors.black54,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                        textAlign: TextAlign.right,
+                                        minFontSize: 8,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  if (provider.currentRates != null &&
+                                      provider.targetCurrency != null &&
+                                      !provider.isLoading)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text(
+                                        '1 ${provider.baseCurrency?.code} = ${provider.currentRates!.rates[provider.targetCurrency!.code]?.toStringAsFixed(4) ?? "N/A"} ${provider.targetCurrency!.code}',
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        textAlign: TextAlign.right,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
 
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Rate Calculator Numpad
-                Expanded(
-                  flex: 1,
-                  child: _buildNumpad(provider, isDark),
-                ),
+                  // Rate Calculator Numpad
+                  Expanded(flex: 1, child: _buildNumpad(provider, isDark)),
                 ],
               ),
             );
@@ -537,24 +524,10 @@ class _ConverterPageState extends State<ConverterPage> {
             child: Column(
               children: keys.map((row) {
                 return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: row.map((key) {
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: _NumpadButton(
-                              text: key,
-                              isDark: isDark,
-                              onTap: () => _onCalcBtn(key, provider),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                  child: _NumpadRow(
+                    row: row,
+                    isDark: isDark,
+                    onTap: (key) => _onCalcBtn(key, provider),
                   ),
                 );
               }).toList(),
@@ -614,8 +587,10 @@ class DashboardNumpadSheet extends StatelessWidget {
                 final text = controller.text;
                 return NeuContainer(
                   isPressed: true,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
                   borderRadius: 16,
                   child: Align(
                     alignment: Alignment.centerRight,
@@ -641,27 +616,12 @@ class DashboardNumpadSheet extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: _keys.map((row) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: row.map((key) {
-                          return Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: SizedBox(
-                                height: 64,
-                                child: _NumpadButton(
-                                  text: key,
-                                  isDark: isDark,
-                                  onTap: () => onCalcBtn(key),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
+                  return SizedBox(
+                    height: 72,
+                    child: _NumpadRow(
+                      row: row,
+                      isDark: isDark,
+                      onTap: onCalcBtn,
                     ),
                   );
                 }).toList(),
@@ -669,6 +629,40 @@ class DashboardNumpadSheet extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _NumpadRow extends StatelessWidget {
+  final List<String> row;
+  final bool isDark;
+  final ValueChanged<String> onTap;
+
+  const _NumpadRow({
+    required this.row,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: row.map((key) {
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: _NumpadButton(
+                text: key,
+                isDark: isDark,
+                onTap: () => onTap(key),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -751,6 +745,7 @@ class _NumpadButtonState extends State<_NumpadButton>
     bool isEquals = widget.text == '=';
     bool isOperator = ['÷', '×', '-', '+'].contains(widget.text);
     bool isAction = ['C', '⌫', '%'].contains(widget.text);
+    bool isDecimal = widget.text == '.';
 
     Color getTextColor() {
       if (_isPressed && isOperator) return Colors.blue.shade200;
@@ -788,24 +783,40 @@ class _NumpadButtonState extends State<_NumpadButton>
           color: getBgColor(),
           width: double.infinity,
           height: double.infinity,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
+          child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: widget.text == '⌫'
-                  ? Icon(
-                      Icons.backspace_outlined,
-                      size: 32,
-                      color: getTextColor(),
-                    )
-                  : Text(
-                      widget.text,
-                      style: TextStyle(
-                        fontSize: widget.text == '00' ? 28 : 32,
-                        fontWeight: (isOperator || isEquals) ? FontWeight.bold : FontWeight.w500,
+              padding: const EdgeInsets.all(10),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: widget.text == '⌫'
+                    ? Icon(
+                        Icons.backspace_outlined,
+                        size: 32,
                         color: getTextColor(),
+                      )
+                    : isDecimal
+                    ? Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: getTextColor(),
+                          shape: BoxShape.circle,
+                        ),
+                      )
+                    : Text(
+                        widget.text,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: widget.text == '00' ? 28 : 32,
+                          fontWeight: (isOperator || isEquals)
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: getTextColor(),
+                          height: 1,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
         ),
